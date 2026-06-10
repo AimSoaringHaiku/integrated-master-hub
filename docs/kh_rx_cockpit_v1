@@ -1,0 +1,314 @@
+<html><head><style>
+:root{
+  --ink:#13120f;--paper:#f4f1eb;--cream:#edeae0;--muted:#7a7568;
+  --border:#ddd9cf;--border2:#c8c3b5;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans JP',sans-serif;--serif:'Fraunces',serif;
+  --red-bg:#fde8e8;--red-brd:#d4604a;--red-tx:#8c1c10;
+  --amb-bg:#fff8ed;--amb-brd:#e0a84a;--amb-tx:#7a4a00;
+  --grn-bg:#f0faf2;--grn-brd:#8ecba0;--grn-tx:#1a5c2a;
+  --blu-bg:#e8f0fe;--blu-brd:#4a6fc8;--blu-tx:#1a3580;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:12px;}
+a{color:inherit;text-decoration:none;}
+
+.hdr{background:#13120f;padding:0 14px;height:42px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hdr-id{font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.14em;}
+.hdr-title{font-family:var(--serif);font-size:15px;font-weight:700;color:#fff;margin-left:4px;}
+.hdr-sub{font-size:9px;color:#555;}
+.hdr-badge{font-family:var(--mono);font-size:7px;border:1px solid;padding:2px 5px;border-radius:2px;margin-left:auto;}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border2);background:var(--cream);padding:0 14px;}
+.tab{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;padding:8px 12px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:500;}
+
+.sheet{display:none;padding:12px 14px;}
+.sheet.active{display:block;}
+
+/* === COCKPIT SHEET === */
+.rx-card{border:1px solid var(--border);border-radius:5px;background:#fff;margin-bottom:10px;overflow:hidden;}
+.rx-head{padding:7px 10px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.rx-drug{font-family:var(--serif);font-size:14px;font-weight:700;letter-spacing:-0.01em;}
+.rx-trigger-badge{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:2px;}
+.rx-trigger-badge.red{background:var(--red-bg);border:0.5px solid var(--red-brd);color:var(--red-tx);}
+.rx-trigger-badge.amber{background:var(--amb-bg);border:0.5px solid var(--amb-brd);color:var(--amb-tx);}
+
+.rx-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
+.rx-col{padding:8px 10px;border-right:0.5px solid var(--border);}
+.rx-col:last-child{border-right:none;}
+.col-label{font-family:var(--mono);font-size:7.5px;color:var(--muted);letter-spacing:0.1em;margin-bottom:5px;}
+
+.alt-drug{font-size:12px;font-weight:500;margin-bottom:3px;}
+.alt-ev{font-family:var(--mono);font-size:8px;color:var(--muted);}
+
+.vital-row{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.vital-val{font-family:var(--mono);font-size:11px;font-weight:500;}
+.vital-label{font-size:9px;color:var(--muted);}
+.vital-ecg{font-size:9px;padding:2px 6px;border-radius:2px;background:var(--blu-bg);border:0.5px solid var(--blu-brd);color:var(--blu-tx);margin-top:3px;display:inline-block;}
+
+.ci-item{font-size:9px;line-height:1.5;padding-left:8px;position:relative;color:var(--red-tx);margin-bottom:1px;}
+.ci-item::before{content:'×';position:absolute;left:0;font-family:var(--mono);font-size:8px;}
+.pt-item{font-size:9px;line-height:1.5;padding-left:8px;position:relative;color:var(--muted);margin-bottom:1px;}
+.pt-item::before{content:'·';position:absolute;left:0;}
+
+.script-box{margin:0 10px 8px;padding:6px 9px;background:var(--grn-bg);border:0.5px solid var(--grn-brd);border-radius:3px;}
+.script-label{font-family:var(--mono);font-size:7px;color:var(--grn-tx);letter-spacing:0.1em;margin-bottom:3px;}
+.script-text{font-size:10px;line-height:1.6;color:#0d3d1a;}
+
+.monitor-row{display:flex;align-items:center;gap:6px;margin:0 10px 8px;padding:5px 8px;background:var(--amb-bg);border:0.5px solid var(--amb-brd);border-radius:3px;}
+.monitor-label{font-family:var(--mono);font-size:7px;color:var(--amb-tx);letter-spacing:0.1em;flex-shrink:0;}
+.monitor-text{font-size:9.5px;color:var(--amb-tx);}
+.supply-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.supply-dot.ok{background:#4a9c6a;}
+.supply-dot.warn{background:#e0a84a;}
+.supply-dot.bad{background:#c84030;}
+
+/* === ATLAS SHEET === */
+.atlas-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:10px;padding:6px 10px;background:var(--cream);border-radius:3px;border:0.5px solid var(--border2);}
+
+/* === STATUS === */
+.statusbar{background:#13120f;color:#444;padding:4px 14px;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:7.5px;letter-spacing:0.08em;flex-wrap:wrap;}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&amp;family=DM+Mono:wght@400;500&amp;family=Fraunces:ital,opsz,wght@0,9..144,700&amp;display=swap" rel="stylesheet">
+
+</head><body><div class="hdr">
+  <span class="hdr-id">KH · Rx · v1</span>
+  <span class="hdr-title">処方箋コックピット</span>
+  <span class="hdr-sub">薬局現場 · 処方受取即時判断支援</span>
+  <span class="hdr-badge" style="border-color:#4a6fc8;color:#4a6fc8;">切替判断 · スクリプト付</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('cockpit',this)">Rx コックピット</div>
+  <div class="tab" onclick="switchTab('atlas',this)">市場アトラス（参照）</div>
+  <div class="tab" onclick="switchTab('add',this)">+ 行を追加</div>
+</div>
+
+<div id="sheet-cockpit" class="sheet active">
+
+  <!-- ROW 1 -->
+  <div class="rx-card">
+    <div class="rx-head">
+      <span class="rx-drug">エンレスト®</span>
+      <span style="font-family:var(--mono);font-size:8px;color:var(--muted);">→</span>
+      <span style="font-size:11px;font-weight:500;">コララン®</span>
+      <span class="rx-trigger-badge red">血圧低下（収縮期 &lt;100 mmHg）</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--muted);">Rx·001</span>
+    </div>
+    <div class="rx-body">
+      <div class="rx-col">
+        <div class="col-label">必須バイタル・検査値</div>
+        <div class="vital-row"><span class="vital-val" style="color:#1a3580;">75</span><span class="vital-label">bpm 以上（安静時心拍数）</span></div>
+        <div class="vital-ecg">洞調律 確認必須（心房細動 → 不可）</div>
+      </div>
+      <div class="rx-col">
+        <div class="col-label">絶対禁忌 · 致命的相互作用</div>
+        <div class="ci-item">高度徐脈（洞機能不全）</div>
+        <div class="ci-item">未治療の不整脈</div>
+        <div class="col-label" style="margin-top:6px;">患者背景</div>
+        <div class="pt-item">高齢者：慎重投与</div>
+        <div class="pt-item">妊婦：禁忌</div>
+      </div>
+      <div class="rx-col">
+        <div class="col-label">代替候補 · エビデンス</div>
+        <div class="alt-drug">コララン®（イバブラジン）</div>
+        <div class="alt-ev">心不全GL：HFrEF 第2段階追加薬</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <div class="supply-dot ok"></div>
+          <span style="font-size:9px;color:var(--muted);">供給：概ね良好</span>
+        </div>
+      </div>
+    </div>
+    <div class="script-box">
+      <div class="script-label">提案スクリプト</div>
+      <div class="script-text">「血圧が低めのため、これ以上降圧させずに心負荷を減らすコラランへの変更を提案します。洞調律は確認済みです。」</div>
+    </div>
+    <div class="monitor-row">
+      <span class="monitor-label">モニタリング</span>
+      <span class="monitor-text">導入後 2週間 — 心拍数・徐脈の有無を再評価</span>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="rx-card">
+    <div class="rx-head">
+      <span class="rx-drug">エンレスト®</span>
+      <span style="font-family:var(--mono);font-size:8px;color:var(--muted);">→</span>
+      <span style="font-size:11px;font-weight:500;">ベルイシグ®</span>
+      <span class="rx-trigger-badge amber">腎機能悪化 · 高K血症</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--muted);">Rx·002</span>
+    </div>
+    <div class="rx-body">
+      <div class="rx-col">
+        <div class="col-label">必須バイタル・検査値</div>
+        <div class="vital-row"><span class="vital-val" style="color:#7a4a00;">K ≤5.4</span><span class="vital-label">mEq/L（必須確認）</span></div>
+        <div class="vital-row"><span class="vital-val" style="color:#7a4a00;">eGFR</span><span class="vital-label">適宜確認</span></div>
+        <div class="vital-ecg" style="background:var(--border);border-color:var(--border2);color:var(--muted);">心電図：特段の制限なし</div>
+      </div>
+      <div class="rx-col">
+        <div class="col-label">絶対禁忌 · 致命的相互作用</div>
+        <div class="ci-item">PDE5阻害薬（シルデナフィル等）併用禁忌</div>
+        <div class="col-label" style="margin-top:6px;">患者背景</div>
+        <div class="pt-item">重度肝機能障害：禁忌</div>
+        <div class="pt-item">妊婦：禁忌</div>
+      </div>
+      <div class="rx-col">
+        <div class="col-label">代替候補 · エビデンス</div>
+        <div class="alt-drug">ベルイシグ®（ベリシグアト）</div>
+        <div class="alt-ev">心不全GL：HFrEF増悪時の追加薬</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <div class="supply-dot ok"></div>
+          <span style="font-size:9px;color:var(--muted);">供給：概ね良好</span>
+        </div>
+      </div>
+    </div>
+    <div class="script-box">
+      <div class="script-label">提案スクリプト</div>
+      <div class="script-text">「腎機能およびK値への影響を考慮し、ベルイシグへの切り替えを提案します。PDE5阻害薬の併用がないことを確認済みです。」</div>
+    </div>
+    <div class="monitor-row">
+      <span class="monitor-label">モニタリング</span>
+      <span class="monitor-text">導入後 2〜4週間 — K値・eGFR および貧血進行を再評価</span>
+    </div>
+  </div>
+
+  <div style="font-family:var(--mono);font-size:8px;color:var(--border2);text-align:center;padding:8px 0;">「+ 行を追加」タブから新しい処方パターンを追加できます</div>
+</div>
+
+<div id="sheet-atlas" class="sheet">
+  <div class="atlas-note">このタブはアトラス俯瞰図（市場構造）の参照用です。コックピットと同一画面で「なぜこの切替が必要か」の背景確認に使います。</div>
+  <div style="text-align:center;padding:24px;font-family:var(--mono);font-size:10px;color:var(--muted);">
+    ← 前のチャットのアトラスアーティファクトを参照してください<br>
+    <span style="font-size:8px;margin-top:4px;display:block;">（統合版では同一アーティファクト内にレンダリング予定）</span>
+  </div>
+</div>
+
+<div id="sheet-add" class="sheet">
+  <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:10px;">新しい処方パターンを追加（AIで自動生成）</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+    <div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:4px;">現在の処方薬</div>
+      <input id="add-current" type="text" placeholder="例：エンレスト®" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 8px;border:1px solid var(--border2);border-radius:3px;background:#fff;">
+    </div>
+    <div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:4px;">回避トリガー</div>
+      <input id="add-trigger" type="text" placeholder="例：重度腎機能悪化" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 8px;border:1px solid var(--border2);border-radius:3px;background:#fff;">
+    </div>
+  </div>
+  <button onclick="addRow()" style="font-family:var(--mono);font-size:10px;padding:6px 14px;border:1px solid #13120f;border-radius:3px;background:#13120f;color:#fff;cursor:pointer;letter-spacing:0.05em;">▶ AIで生成して追加</button>
+  <div id="add-status" style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px;"></div>
+</div>
+
+<div class="statusbar">
+  <span>Rx·001〜002 · エンレスト切替パターン</span>
+  <span>薬局現場 · 処方受取即時判断</span>
+  <span style="margin-left:auto;font-style:italic;color:#333;">KH Rx Cockpit v1</span>
+</div>
+
+<script>
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sheet-'+id).classList.add('active');
+}
+
+async function addRow(){
+  const cur=document.getElementById('add-current').value.trim();
+  const trg=document.getElementById('add-trigger').value.trim();
+  if(!cur||!trg){document.getElementById('add-status').textContent='処方薬と回避トリガーを入力してください';return;}
+  document.getElementById('add-status').textContent='生成中…';
+
+  const prompt=`薬局向け処方切替判断カードのJSONを生成してください。
+
+現在の処方: ${cur}
+回避トリガー: ${trg}
+
+JSONのみ出力（コードブロックなし）:
+{
+  "id": "Rx·XXX",
+  "current": "${cur}",
+  "alt": "代替薬名",
+  "trigger": "${trg}",
+  "triggerColor": "red|amber",
+  "vitals": [{"val": "閾値", "label": "説明"}],
+  "ecg": "心電図所見（なければ「特段の制限なし」）",
+  "ci": ["絶対禁忌1", "致命的相互作用1"],
+  "pt": ["患者背景1（高齢者等）"],
+  "evidence": "GLフロー等エビデンス",
+  "supply": "ok|warn|bad",
+  "supplyLabel": "供給状況",
+  "script": "提案スクリプト（1〜2文）",
+  "monitor": "モニタリング期間と内容"
+}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await res.json();
+    const text=(d.content||[]).map(b=>b.text||'').join('');
+    const card=JSON.parse(text.replace(/```json|```/g,'').trim());
+    injectCard(card);
+    document.getElementById('add-status').textContent=`追加済：${card.id}`;
+    switchTab('cockpit',document.querySelectorAll('.tab')[0]);
+  }catch(e){
+    document.getElementById('add-status').textContent='エラー: '+e.message;
+  }
+}
+
+function injectCard(c){
+  const vitalRows=(c.vitals||[]).map(v=>`<div class="vital-row"><span class="vital-val" style="color:#1a3580;">${v.val}</span><span class="vital-label">${v.label}</span></div>`).join('');
+  const ciItems=(c.ci||[]).map(x=>`<div class="ci-item">${x}</div>`).join('');
+  const ptItems=(c.pt||[]).map(x=>`<div class="pt-item">${x}</div>`).join('');
+  const supplyColor=c.supply==='ok'?'#4a9c6a':c.supply==='warn'?'#e0a84a':'#c84030';
+  const ecgStyle=c.ecg&&c.ecg!=='特段の制限なし'?`background:var(--blu-bg);border-color:var(--blu-brd);color:var(--blu-tx);`:`background:var(--border);border-color:var(--border2);color:var(--muted);`;
+  const tc=c.triggerColor==='red'?'red':'amber';
+  const html=`<div class="rx-card">
+    <div class="rx-head">
+      <span class="rx-drug">${c.current}</span>
+      <span style="font-family:var(--mono);font-size:8px;color:var(--muted);">→</span>
+      <span style="font-size:11px;font-weight:500;">${c.alt}</span>
+      <span class="rx-trigger-badge ${tc}">${c.trigger}</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--muted);">${c.id}</span>
+    </div>
+    <div class="rx-body">
+      <div class="rx-col">
+        <div class="col-label">必須バイタル・検査値</div>
+        ${vitalRows}
+        <div class="vital-ecg" style="${ecgStyle}">${c.ecg||'特段の制限なし'}</div>
+      </div>
+      <div class="rx-col">
+        <div class="col-label">絶対禁忌 · 致命的相互作用</div>
+        ${ciItems}
+        <div class="col-label" style="margin-top:6px;">患者背景</div>
+        ${ptItems}
+      </div>
+      <div class="rx-col">
+        <div class="col-label">代替候補 · エビデンス</div>
+        <div class="alt-drug">${c.alt}</div>
+        <div class="alt-ev">${c.evidence||''}</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <div class="supply-dot" style="background:${supplyColor};"></div>
+          <span style="font-size:9px;color:var(--muted);">${c.supplyLabel||''}</span>
+        </div>
+      </div>
+    </div>
+    <div class="script-box">
+      <div class="script-label">提案スクリプト</div>
+      <div class="script-text">「${c.script}」</div>
+    </div>
+    <div class="monitor-row">
+      <span class="monitor-label">モニタリング</span>
+      <span class="monitor-text">${c.monitor}</span>
+    </div>
+  </div>`;
+  const container=document.getElementById('sheet-cockpit');
+  container.insertAdjacentHTML('beforeend',html);
+}
+
+document.getElementById('add-current').addEventListener('keydown',e=>{if(e.key==='Enter')addRow();});
+document.getElementById('add-trigger').addEventListener('keydown',e=>{if(e.key==='Enter')addRow();});
+</script>
+</body></html>
