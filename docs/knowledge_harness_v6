@@ -1,0 +1,413 @@
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&amp;family=DM+Mono:wght@400;500&amp;family=Fraunces:ital,opsz,wght@0,9..144,700&amp;display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#13120f;--paper:#f4f1eb;--cream:#edeae0;--muted:#7a7568;
+  --hint:#b8b3a8;--border:#ddd9cf;--border2:#c8c3b5;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans JP',sans-serif;--serif:'Fraunces',serif;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;}
+
+header{background:var(--ink);padding:0 20px;height:48px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #222;}
+.h-id{font-family:var(--mono);font-size:9px;color:#555;letter-spacing:0.14em;}
+.h-drug{font-family:var(--serif);font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.02em;margin-left:8px;}
+.h-sub{font-size:10px;color:#666;font-weight:300;}
+.h-badge{font-family:var(--mono);font-size:8px;border:1px solid;padding:2px 6px;border-radius:2px;margin-left:auto;}
+.hb-v{border-color:#c84030;color:#c84030;}
+
+.wrap{padding:20px;max-width:1100px;margin:0 auto;}
+
+.toolbar{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.toolbar input{flex:1;min-width:200px;font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid var(--border2);border-radius:3px;background:#fff;color:var(--ink);}
+.toolbar button{font-family:var(--mono);font-size:10px;padding:6px 12px;border:1px solid var(--border2);border-radius:3px;background:#fff;color:var(--ink);cursor:pointer;letter-spacing:0.06em;white-space:nowrap;}
+.toolbar button:hover{background:var(--cream);}
+.toolbar button.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+.toolbar button.primary:hover{background:#333;}
+
+.page-title{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.page-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.legend{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;font-family:var(--mono);font-size:9px;color:var(--muted);align-items:center;}
+.leg{display:flex;align-items:center;gap:5px;}
+.leg-swatch{width:10px;height:10px;border-radius:2px;border:1px solid;}
+.leg-drill{background:#e8f0fe;border-color:#4a6fc8;}
+.leg-leaf{background:#f4f1eb;border-color:#c8c3b5;}
+.leg-warn{background:#fde8e8;border-color:#d4604a;}
+
+.root-node{display:grid;grid-template-columns:auto 1fr;gap:0;margin-bottom:16px;}
+.root-chart-wrap{display:flex;flex-direction:column;align-items:center;padding:14px 18px 14px 0;border-right:2px solid var(--border2);margin-right:18px;}
+.root-label{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px;}
+.root-sub{font-size:10px;color:var(--muted);}
+.root-pct{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;}
+.root-info{padding:12px 0;display:flex;flex-direction:column;justify-content:center;}
+.root-desc{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:8px;}
+
+.l1-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+
+.node{border:1px solid var(--border);border-radius:4px;background:#fff;overflow:hidden;transition:box-shadow 0.15s;}
+.node:hover{box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+.node.has-child{border-color:#4a6fc8;cursor:pointer;}
+.node.has-child .node-head{background:#e8f0fe;}
+.node.leaf .node-head{background:var(--cream);}
+.node.critical{border-color:#d4604a;}
+.node.critical .node-head{background:#fde8e8;}
+.node.warn-node{border-color:#e0a84a;}
+.node.warn-node .node-head{background:#fff8ed;}
+
+.node-head{padding:7px 9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.node-id{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:0.08em;flex-shrink:0;}
+.node-name{font-size:11px;font-weight:500;flex:1;line-height:1.3;}
+.drill-arrow{font-size:9px;color:#4a6fc8;flex-shrink:0;transition:transform 0.18s;}
+.node.open .drill-arrow{transform:rotate(90deg);}
+.node-body{padding:8px 9px;}
+
+.node-stats{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.node-pie{flex-shrink:0;}
+.node-nums{flex:1;}
+.node-pct{font-family:var(--mono);font-size:15px;font-weight:500;line-height:1;margin-bottom:2px;}
+.node-abs{font-family:var(--mono);font-size:8px;color:var(--muted);}
+.node-detail{font-size:10px;color:var(--muted);line-height:1.65;border-top:1px solid var(--border);padding-top:6px;margin-top:2px;}
+
+.children{display:none;padding:8px 8px 8px 18px;border-top:1px solid var(--border);background:var(--paper);}
+.node.open>.children{display:block;}
+.children-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:7px;}
+.l2 .node-name{font-size:10.5px;}
+.l2 .node-pct{font-size:12px;}
+
+.dest-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.dest-tag{font-family:var(--mono);font-size:8px;letter-spacing:0.05em;padding:2px 6px;border-radius:2px;background:var(--cream);border:1px solid var(--border2);color:var(--muted);}
+.dest-tag.red{background:#fde8e8;border-color:#d4604a;color:#8c1c10;}
+.dest-tag.amber{background:#fff8ed;border-color:#e0a84a;color:#7a4a00;}
+.dest-tag.green{background:#f0faf2;border-color:#8ecba0;color:#1a5c2a;}
+.dest-tag.blue{background:#e8f0fe;border-color:#4a6fc8;color:#1a3580;}
+
+.ai-loading{display:flex;align-items:center;gap:10px;padding:20px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.statusbar{background:var(--ink);color:#555;padding:6px 20px;display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:8px;letter-spacing:0.08em;border-top:1px solid #222;flex-wrap:wrap;margin-top:20px;}
+.draft{margin-left:auto;font-style:italic;color:#333;}
+
+.empty-state{text-align:center;padding:40px 20px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.empty-state .big{font-family:var(--serif);font-size:28px;color:var(--hint);margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="h-id">KH · v6</span>
+  <span class="h-drug" id="h-title">ナレッジハーネス</span>
+  <span class="h-sub" id="h-sub">市場ディレクトリ · 一覧ツリー</span>
+  <span class="h-badge hb-v">ノード内円グラフ</span>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <input type="text" id="topic-input" placeholder="トピックを入力（例：SGLT2阻害薬の市場構造、Reactの学習ロードマップ…）">
+    <button class="primary" onclick="generateTree()">▶ 生成</button>
+    <button onclick="loadDemo()">デモを見る</button>
+    <button onclick="toggleAll(true)">全展開</button>
+    <button onclick="toggleAll(false)">全収納</button>
+  </div>
+
+  <div id="tree-area">
+    <div class="empty-state">
+      <div class="big">KH</div>
+      トピックを入力して「生成」を押すと<br>v6スタイルのツリーが生成されます
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="status-topic">未生成</span>
+  <span>ノード内円グラフ · SVG静的描画</span>
+  <span class="draft">KH v6 · AI生成ツリー</span>
+</div>
+
+<script>
+function tog(el){el.classList.toggle('open');}
+function toggleAll(open){
+  document.querySelectorAll('.node.has-child').forEach(n=>{
+    if(open) n.classList.add('open'); else n.classList.remove('open');
+  });
+}
+
+function makePie(pct, size, fillColor, bgColor, strokeColor, textColor){
+  const r = size===48?20:17;
+  const cx = size/2, cy = size/2;
+  const rad = r;
+  const angle = (pct/100)*2*Math.PI;
+  const x = cx + rad*Math.sin(angle);
+  const y = cy - rad*Math.cos(angle);
+  const large = pct>50?1:0;
+  const innerR = size===48?11:9;
+  const fs = size===48?7:6;
+  const pathD = pct>=99.9
+    ? `M${cx},${cy} m-${rad},0 a${rad},${rad} 0 1,1 ${rad*2},0 a${rad},${rad} 0 1,1 -${rad*2},0`
+    : `M${cx},${cy} L${cx},${cy-rad} A${rad},${rad} 0 ${large},1 ${x},${y} Z`;
+  const pctLabel = pct<1?'<1%':pct>=99?'99%+':`${Math.round(pct)}%`;
+  return `<svg class="node-pie" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <circle cx="${cx}" cy="${cy}" r="${rad}" fill="${bgColor}" stroke="${strokeColor}" stroke-width="1"/>
+    <path d="${pathD}" fill="${fillColor}" opacity="0.9"/>
+    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#fff"/>
+    <text x="${cx}" y="${cy+3}" text-anchor="middle" font-family="'DM Mono',monospace" font-size="${fs}" fill="${textColor}" font-weight="500">${pctLabel}</text>
+  </svg>`;
+}
+
+const COLORS = {
+  blue:  {fill:'#2a7acc',bg:'#e8f0fe',stroke:'#4a6fc8',text:'#1a3580'},
+  green: {fill:'#1a5c2a',bg:'#f0faf2',stroke:'#8ecba0',text:'#1a5c2a'},
+  amber: {fill:'#e0a84a',bg:'#fff8ed',stroke:'#e0a84a',text:'#7a4a00'},
+  red:   {fill:'#c84030',bg:'#fde8e8',stroke:'#d4604a',text:'#8c1c10'},
+  purple:{fill:'#9b59b6',bg:'#f3eaff',stroke:'#9b59b6',text:'#4a1b6a'},
+  teal:  {fill:'#16a085',bg:'#e0f7f4',stroke:'#16a085',text:'#0a5c4a'},
+  gray:  {fill:'#b0ab9e',bg:'#f4f1eb',stroke:'#c8c3b5',text:'#7a7568'},
+};
+
+function colorKey(label){
+  const l = label||'';
+  if(/禁忌|危険|重症|非適応|不可/.test(l)) return 'red';
+  if(/注意|慎重|リスク|障壁/.test(l)) return 'amber';
+  if(/適応|処方|推奨|最高|完全/.test(l)) return 'green';
+  if(/拡大|増加|急増/.test(l)) return 'blue';
+  if(/小児|特殊|希少/.test(l)) return 'teal';
+  if(/その他|管理のみ|なし/.test(l)) return 'gray';
+  return 'blue';
+}
+
+function renderNode(n, level){
+  const isRoot = level===0;
+  const hasChild = n.children && n.children.length>0;
+  const ck = n.colorKey || colorKey(n.name);
+  const c = COLORS[ck] || COLORS.blue;
+  const psize = isRoot?48:(level===1?48:40);
+  const pct = n.pct||0;
+  const pie = makePie(pct, psize, c.fill, c.bg, c.stroke, c.text);
+  const warn = ck==='amber'?'warn-node':'';
+  const crit = ck==='red'?'critical':'';
+  const hc = hasChild?'has-child':'leaf';
+  const arrow = hasChild?'<span class="drill-arrow">▶</span>':'';
+  const onclick = hasChild?`onclick="tog(this)"`:'' ;
+  const idSpan = n.id?`<span class="node-id">${n.id}</span>`:'';
+  const detail = n.detail?`<div class="node-detail">${n.detail}</div>`:'';
+  const tags = (n.tags||[]).map(t=>`<span class="dest-tag ${t.color||''}">${t.label}</span>`).join('');
+  const tagsHtml = tags?`<div class="dest-tags">${tags}</div>`:'';
+
+  let childrenHtml='';
+  if(hasChild){
+    const childNodes = n.children.map(ch=>renderNode(ch,level+1)).join('');
+    const subLabel = n.childLabel||'';
+    childrenHtml=`<div class="children">
+      ${subLabel?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:0.1em;margin-bottom:7px;">${subLabel}</div>`:''}
+      <div class="children-grid l2">${childNodes}</div>
+    </div>`;
+  }
+
+  const pctLabel = pct<1?'<1%':pct>=99?'99%+':`${Math.round(pct*10)/10}%`;
+  const absLabel = n.abs||`${pctLabel}`;
+
+  return `<div class="node ${hc} ${warn} ${crit}" ${onclick}>
+    <div class="node-head">${idSpan}<span class="node-name">${n.name}</span>${arrow}</div>
+    <div class="node-body">
+      <div class="node-stats">${pie}
+        <div class="node-nums">
+          <div class="node-pct" style="color:${c.fill};">${n.value||pctLabel}</div>
+          <div class="node-abs">${absLabel}</div>
+        </div>
+      </div>
+      ${detail}${tagsHtml}
+    </div>
+    ${childrenHtml}
+  </div>`;
+}
+
+function renderTree(data){
+  const root = data.root;
+  const ck = root.colorKey || 'blue';
+  const c = COLORS[ck]||COLORS.blue;
+  const rootPie = makePie(root.pct||100, 120, c.fill, c.bg, c.stroke, c.text);
+  const rootHtml = `<div class="root-node">
+    <div class="root-chart-wrap">
+      <svg viewBox="0 0 120 120" width="120" height="120">
+        ${buildRootPie(root.segments||[])}
+        <circle cx="60" cy="60" r="32" fill="${root.bgColor||'#f4f1eb'}"/>
+        <text x="60" y="56" text-anchor="middle" font-family="'DM Mono',monospace" font-size="11" font-weight="500" fill="#13120f">${root.total||''}</text>
+        <text x="60" y="69" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#7a7568">${root.totalLabel||''}</text>
+      </svg>
+      <div class="root-pct">${root.pctLabel||''}</div>
+    </div>
+    <div class="root-info">
+      <div class="root-label">${root.name}</div>
+      <div class="root-sub" style="font-size:11px;color:var(--muted);margin-top:4px;">${root.sub||''}</div>
+      <div class="root-desc" style="margin-top:8px;">${root.desc||''}</div>
+    </div>
+  </div>`;
+
+  const l1Html = (data.nodes||[]).map(n=>renderNode(n,1)).join('');
+
+  return `
+    <div class="page-title">${data.title||'ツリー'}</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-swatch leg-drill"></div>展開可能</div>
+      <div class="leg"><div class="leg-swatch leg-leaf"></div>末端ノード</div>
+      <div class="leg"><div class="leg-swatch leg-warn"></div>注意層</div>
+      <div class="leg"><div class="leg-swatch" style="background:#fde8e8;border-color:#d4604a;"></div>禁忌・重症層</div>
+      <span style="margin-left:auto;font-size:9px;">▶ 青枠ノードをクリックで展開</span>
+    </div>
+    ${rootHtml}
+    <div class="page-title" style="margin-top:8px;">${data.l1Title||'内訳ツリー'}</div>
+    <div class="l1-grid">${l1Html}</div>
+  `;
+}
+
+function buildRootPie(segments){
+  if(!segments.length) return '<circle cx="60" cy="60" r="56" fill="#e8e4dc" opacity="0.5"/>';
+  let paths=''; let angle=0;
+  segments.forEach(s=>{
+    const pct=s.pct/100;
+    const startA=angle*2*Math.PI;
+    const endA=(angle+pct)*2*Math.PI;
+    const x1=60+56*Math.sin(startA), y1=60-56*Math.cos(startA);
+    const x2=60+56*Math.sin(endA), y2=60-56*Math.cos(endA);
+    const large=pct>0.5?1:0;
+    const color=s.color||'#e8e4dc';
+    paths+=`<path d="M60,60 L${x1},${y1} A56,56 0 ${large},1 ${x2},${y2} Z" fill="${color}" opacity="${s.opacity||0.8}"/>`;
+    angle+=pct;
+  });
+  return paths;
+}
+
+async function generateTree(){
+  const topic = document.getElementById('topic-input').value.trim();
+  if(!topic){alert('トピックを入力してください');return;}
+  document.getElementById('tree-area').innerHTML=`<div class="ai-loading"><div class="spinner"></div>「${topic}」のツリーを生成中…</div>`;
+
+  const prompt=`以下のトピックについて、v6ナレッジハーネス形式のJSONを生成してください。
+
+トピック: ${topic}
+
+以下のJSON形式で返してください（コードブロックなし、純粋なJSONのみ）:
+{
+  "title": "タイトル文字列",
+  "l1Title": "内訳セクションタイトル",
+  "root": {
+    "name": "ルート概念名",
+    "sub": "補足説明",
+    "desc": "説明文（1-2文）",
+    "total": "総数・規模",
+    "totalLabel": "単位ラベル",
+    "pctLabel": "代表パーセント説明",
+    "bgColor": "#f4f1eb",
+    "segments": [
+      {"pct": 数値, "color": "#カラーコード", "opacity": 0.8, "label": "ラベル"}
+    ]
+  },
+  "nodes": [
+    {
+      "id": "L1·①",
+      "name": "ノード名",
+      "pct": 数値（0-100）,
+      "value": "表示値（例：約40万人）",
+      "abs": "補足（例：全体の30%）",
+      "detail": "詳細説明",
+      "colorKey": "blue|green|amber|red|purple|teal|gray のいずれか",
+      "childLabel": "子ノードセクション名",
+      "tags": [{"label": "タグ名", "color": "red|amber|green|blue|なし"}],
+      "children": [
+        {
+          "id": "①-A",
+          "name": "子ノード名",
+          "pct": 数値,
+          "value": "表示値",
+          "abs": "補足",
+          "detail": "詳細",
+          "colorKey": "カラーキー",
+          "tags": []
+        }
+      ]
+    }
+  ]
+}
+
+rules:
+- ノードは3〜6個
+- 各ノードのpctの合計は100に近づける
+- 子ノードは2〜4個
+- colorKeyは内容に合わせる（禁忌→red, 注意→amber, 推奨→green, 標準→blue, 希少→teal, その他→gray）
+- 日本語で記述
+- JSONのみ出力、説明文なし`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const d=await res.json();
+    const text=(d.content||[]).map(b=>b.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const data=JSON.parse(clean);
+    document.getElementById('tree-area').innerHTML=renderTree(data);
+    document.getElementById('h-title').textContent=topic;
+    document.getElementById('status-topic').textContent=`生成済 · ${topic}`;
+  }catch(e){
+    document.getElementById('tree-area').innerHTML=`<div class="ai-loading" style="color:#c84030;">エラー: ${e.message}</div>`;
+  }
+}
+
+function loadDemo(){
+  const demoData={
+    title:'心不全 130万人 · 内訳ツリー',
+    l1Title:'心不全 130万人 · 治療層ツリー',
+    root:{
+      name:'日本人口 1億2,000万人',
+      sub:'← 円グラフは全人口に対する心疾患の割合',
+      desc:'心不全患者は約130万人（人口の1.1%）。高齢化に伴い2030年には150万人超が見込まれる。',
+      total:'1.2億人',totalLabel:'日本総人口',pctLabel:'心不全 = 人口の 1.1%',bgColor:'#f4f1eb',
+      segments:[
+        {pct:1.1,color:'#c84030',opacity:0.9,label:'心不全'},
+        {pct:5.2,color:'#e0a84a',opacity:0.8,label:'循環器'},
+        {pct:93.7,color:'#e8e4dc',opacity:0.7,label:'健常'}
+      ]
+    },
+    nodes:[
+      {id:'L1·①',name:'HFrEF\n収縮能低下型',pct:30.8,value:'約40万人',abs:'心不全全体の30.8%',detail:'LVEF≦40%。エンレストの主戦場。死亡率20%↓（PARADIGM-HF）。',colorKey:'green',childLabel:'HFrEF · Fantastic 4 実装状況',
+        children:[
+          {id:'①-A',name:'Fantastic 4 全実装',pct:15,value:'約6万人',abs:'HFrEFの15%',detail:'ARNI＋β遮断薬＋MRA＋SGLT2iの全4剤。ガイドライン推奨の最高峰。',colorKey:'green',tags:[]},
+          {id:'①-B',name:'エンレスト処方中（F4未達）',pct:35,value:'約14万人',abs:'HFrEFの35%',detail:'増量・追加の余地あり。服薬指導が最も効果的な層。',colorKey:'blue',tags:[]},
+          {id:'①-C',name:'ACEi/ARB継続（未切替）',pct:30,value:'約12万人',abs:'HFrEFの30%',detail:'切替候補層。36時間ウォッシュアウトの説明が移行の鍵。',colorKey:'amber',tags:[{label:'切替時 36h確認必須',color:'amber'}]},
+          {id:'①-D',name:'RAAS阻害薬なし',pct:20,value:'約8万人',abs:'HFrEFの20%',detail:'低血圧・腎機能・経済的理由で非適応。',colorKey:'gray',tags:[{label:'非薬物療法',color:''},{label:'緩和ケア',color:''}]}
+        ]},
+      {id:'L1·②',name:'HFpEF / HFmrEF\n収縮能維持',pct:46,value:'約60万人',abs:'心不全全体の46%',detail:'最も急拡大している層。SGLT2i併用が主戦場。高齢女性に多い。',colorKey:'blue',childLabel:'HFpEF · 治療状況',
+        children:[
+          {id:'②-A',name:'SGLT2i処方中',pct:25,value:'約15万人',abs:'HFpEFの25%',detail:'再入院阻止に最もエビデンスが厚い。',colorKey:'green',tags:[]},
+          {id:'②-B',name:'エンレスト処方中',pct:10,value:'約6万人',abs:'HFpEFの10%',detail:'2024年適応拡大後に急拡大。',colorKey:'blue',tags:[]},
+          {id:'②-C',name:'ARB/ACEi単独',pct:30,value:'約18万人',abs:'HFpEFの30%',detail:'SGLT2iまたはエンレスト追加の余地あり。',colorKey:'amber',tags:[]},
+          {id:'②-D',name:'症状管理のみ',pct:35,value:'約21万人',abs:'HFpEFの35%',detail:'低血圧・腎機能低下でQOL管理が主眼。',colorKey:'red',tags:[{label:'QOL管理',color:''}]}
+        ]},
+      {id:'L1·⑤',name:'非適応層\n130万人中 約30%',pct:30,value:'約39万人',abs:'禁忌10% + 慎重15% + 障壁5%',detail:'エンレストが届かない・届けてはいけない層。防衛格子の完成条件。',colorKey:'red',childLabel:'非適応層の構造',
+        children:[
+          {id:'非①',name:'禁忌・重症層',pct:10,value:'約13万人',abs:'非適応層の33%',detail:'重度腎不全・血管浮腫既往・妊婦。絶対禁忌。',colorKey:'red',tags:[{label:'緩和ケア',color:'red'}]},
+          {id:'非②',name:'慎重投与・不耐容層',pct:15,value:'約20万人',abs:'非適応層の50%',detail:'低血圧リスク高い超高齢者・高K血症。',colorKey:'amber',tags:[{label:'ACEi/ARB継続',color:'amber'}]},
+          {id:'非③',name:'経済的・心理的障壁層',pct:5,value:'約6万人',abs:'非適応層の17%',detail:'現状維持バイアス・ジェネリック安定層。',colorKey:'gray',tags:[{label:'既存薬（安定重視）',color:''}]}
+        ]}
+    ]
+  };
+  document.getElementById('topic-input').value='エンレスト市場構造（デモ）';
+  document.getElementById('tree-area').innerHTML=renderTree(demoData);
+  document.getElementById('h-title').textContent='エンレスト®';
+  document.getElementById('status-topic').textContent='デモデータ · エンレスト市場構造';
+}
+
+document.getElementById('topic-input').addEventListener('keydown',e=>{if(e.key==='Enter')generateTree();});
+</script>
+
+
+</body></html>
