@@ -1,0 +1,306 @@
+<html><head><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#13120f;--paper:#f4f1eb;--cream:#edeae0;--muted:#7a7568;
+  --border:#ddd9cf;--border2:#c8c3b5;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans JP',sans-serif;--serif:'Fraunces',serif;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&amp;family=DM+Mono:wght@400;500&amp;family=Fraunces:ital,opsz,wght@0,9..144,700&amp;display=swap" rel="stylesheet">
+
+</head><body><div style="background:#13120f;padding:0 16px;height:44px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #222;">
+  <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:0.14em;">KH · ATLAS · v6</span>
+  <span style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#fff;margin-left:6px;" id="h-title">ナレッジハーネス</span>
+  <span style="font-size:9px;color:#555;font-weight:300;" id="h-sub">俯瞰アトラス · 全階層常時表示</span>
+  <span style="font-family:'DM Mono',monospace;font-size:8px;border:1px solid #c84030;color:#c84030;padding:2px 6px;border-radius:2px;margin-left:auto;">2D一覧</span>
+</div>
+
+<div style="padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#f4f1eb;border-bottom:1px solid #ddd9cf;">
+  <input id="topic-in" type="text" placeholder="トピックを入力（例：心不全市場、React学習マップ…）" style="flex:1;min-width:200px;font-family:'DM Mono',monospace;font-size:11px;padding:5px 9px;border:1px solid #c8c3b5;border-radius:3px;background:#fff;color:#13120f;">
+  <button onclick="generateAtlas()" style="font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid #13120f;border-radius:3px;background:#13120f;color:#fff;cursor:pointer;letter-spacing:0.06em;">▶ 生成</button>
+  <button onclick="loadDemo()" style="font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;border:1px solid #c8c3b5;border-radius:3px;background:#fff;color:#13120f;cursor:pointer;">デモ</button>
+</div>
+
+<div id="atlas" style="padding:14px 16px;"></div>
+
+<div style="background:#13120f;color:#555;padding:5px 16px;display:flex;align-items:center;gap:14px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.08em;flex-wrap:wrap;margin-top:4px;">
+  <span id="st">未生成</span>
+  <span>全階層常時表示 · 折りたたみなし</span>
+  <span style="margin-left:auto;font-style:italic;color:#333;">KH Atlas v6</span>
+</div>
+
+<script>
+const COLORS={
+  blue: {fill:'#2a7acc',bg:'#e8f0fe',stroke:'#4a6fc8',text:'#1a3580',muted:'#4a6fc8'},
+  green:{fill:'#1a5c2a',bg:'#f0faf2',stroke:'#8ecba0',text:'#1a5c2a',muted:'#4a9c6a'},
+  amber:{fill:'#e0a84a',bg:'#fff8ed',stroke:'#e0a84a',text:'#7a4a00',muted:'#c88c20'},
+  red:  {fill:'#c84030',bg:'#fde8e8',stroke:'#d4604a',text:'#8c1c10',muted:'#c84030'},
+  purple:{fill:'#9b59b6',bg:'#f3eaff',stroke:'#9b59b6',text:'#4a1b6a',muted:'#9b59b6'},
+  teal: {fill:'#16a085',bg:'#e0f7f4',stroke:'#16a085',text:'#0a5c4a',muted:'#16a085'},
+  gray: {fill:'#b0ab9e',bg:'#f4f1eb',stroke:'#c8c3b5',text:'#7a7568',muted:'#b0ab9e'},
+};
+
+function pie(pct,sz,ck){
+  const c=COLORS[ck]||COLORS.blue;
+  const r=sz/2-2, cx=sz/2, cy=sz/2;
+  const inner=r*0.52;
+  const fs=sz<=28?6:sz<=36?7:8;
+  const angle=(Math.min(pct,99.9)/100)*2*Math.PI;
+  const x=cx+r*Math.sin(angle), y=cy-r*Math.cos(angle);
+  const large=pct>50?1:0;
+  const arc=pct>=99.9
+    ?`M${cx},${cy-r} A${r},${r} 0 1,1 ${cx-0.01},${cy-r} Z`
+    :`M${cx},${cy} L${cx},${cy-r} A${r},${r} 0 ${large},1 ${x},${y} Z`;
+  const label=pct<1?'<1':pct>=99?'99+':Math.round(pct)+'';
+  return `<svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" style="flex-shrink:0;">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${c.bg}" stroke="${c.stroke}" stroke-width="0.8"/>
+    <path d="${arc}" fill="${c.fill}" opacity="0.9"/>
+    <circle cx="${cx}" cy="${cy}" r="${inner}" fill="#fff"/>
+    <text x="${cx}" y="${cy+fs*0.38}" text-anchor="middle" font-family="'DM Mono',monospace" font-size="${fs}" fill="${c.text}" font-weight="500">${label}%</text>
+  </svg>`;
+}
+
+function rootPieSVG(segments,sz=100){
+  const cx=sz/2,cy=sz/2,r=sz/2-4,inner=r*0.42;
+  let paths='',angle=0;
+  (segments||[]).forEach(s=>{
+    const pct=s.pct/100;
+    const a0=angle*2*Math.PI, a1=(angle+pct)*2*Math.PI;
+    const x0=cx+r*Math.sin(a0),y0=cy-r*Math.cos(a0);
+    const x1=cx+r*Math.sin(a1),y1=cy-r*Math.cos(a1);
+    const large=pct>0.5?1:0;
+    paths+=`<path d="M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${large},1 ${x1},${y1} Z" fill="${s.color||'#e8e4dc'}" opacity="${s.opacity||0.85}"/>`;
+    angle+=pct;
+  });
+  return `<svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}">
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="${inner}" fill="#f4f1eb"/>
+  </svg>`;
+}
+
+function renderAtlas(data){
+  const root=data.root||{};
+  const nodes=data.nodes||[];
+
+  let html='';
+
+  html+=`<div style="display:grid;grid-template-columns:auto 1fr;gap:0;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid #c8c3b5;">`;
+  html+=`<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px 10px 0;border-right:2px solid #c8c3b5;margin-right:18px;">`;
+  html+=rootPieSVG(root.segments,100);
+  html+=`<div style="font-family:'DM Mono',monospace;font-size:9px;color:#7a7568;margin-top:5px;text-align:center;">${root.pctLabel||''}</div></div>`;
+  html+=`<div style="display:flex;flex-direction:column;justify-content:center;">`;
+  html+=`<div style="font-family:'Fraunces',serif;font-size:19px;font-weight:700;letter-spacing:-0.02em;">${root.name||''}</div>`;
+  html+=`<div style="font-size:10px;color:#7a7568;margin-top:2px;">${root.sub||''}</div>`;
+  html+=`<div style="font-size:11px;color:#7a7568;line-height:1.7;margin-top:8px;">${root.desc||''}</div>`;
+  const tags=(root.tags||[]).map(t=>`<span style="font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:2px;background:${t.bg||'#edeae0'};border:0.5px solid ${t.border||'#c8c3b5'};color:${t.color||'#7a7568'};">${t.label}</span>`).join('');
+  if(tags) html+=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">${tags}</div>`;
+  html+=`</div></div>`;
+
+  html+=`<div style="font-family:'DM Mono',monospace;font-size:9px;color:#7a7568;letter-spacing:0.12em;margin-bottom:10px;display:flex;align-items:center;gap:8px;">${data.l1Title||'内訳'}
+    <span style="flex:1;height:1px;background:#ddd9cf;display:inline-block;margin-left:8px;"></span></div>`;
+
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">`;
+
+  nodes.forEach(n=>{
+    const ck=n.colorKey||'blue';
+    const c=COLORS[ck]||COLORS.blue;
+    const hasCh=n.children&&n.children.length>0;
+    const borderC=hasCh?c.stroke:'#c8c3b5';
+    const headBg=hasCh?c.bg:'#edeae0';
+
+    html+=`<div style="border:1px solid ${borderC};border-radius:4px;background:#fff;overflow:hidden;">`;
+
+    html+=`<div style="padding:7px 9px;border-bottom:1px solid #ddd9cf;background:${headBg};display:flex;align-items:center;gap:6px;">`;
+    if(n.id) html+=`<span style="font-family:'DM Mono',monospace;font-size:8px;color:#7a7568;">${n.id}</span>`;
+    html+=`<span style="font-size:11px;font-weight:500;flex:1;line-height:1.3;">${n.name||''}</span>`;
+    html+=`</div>`;
+
+    html+=`<div style="padding:8px 9px;">`;
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">`;
+    html+=pie(n.pct||0,44,ck);
+    html+=`<div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:${c.fill};line-height:1;">${n.value||''}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:#7a7568;">${n.abs||''}</div></div>`;
+    html+=`</div>`;
+    if(n.detail) html+=`<div style="font-size:9.5px;color:#7a7568;line-height:1.6;border-top:0.5px solid #ddd9cf;padding-top:5px;">${n.detail}</div>`;
+
+    if(hasCh){
+      if(n.childLabel) html+=`<div style="font-family:'DM Mono',monospace;font-size:8px;color:#7a7568;letter-spacing:0.1em;margin-top:8px;margin-bottom:5px;padding-top:5px;border-top:0.5px solid #ddd9cf;">${n.childLabel}</div>`;
+      else html+=`<div style="margin-top:6px;padding-top:5px;border-top:0.5px solid #ddd9cf;"></div>`;
+
+      html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px;">`;
+      n.children.forEach(ch=>{
+        const ck2=ch.colorKey||ck;
+        const c2=COLORS[ck2]||COLORS.blue;
+        const borderC2=ck2==='red'?'#d4604a':ck2==='amber'?'#e0a84a':'#c8c3b5';
+        const bgH2=ck2==='red'?'#fde8e8':ck2==='amber'?'#fff8ed':ck2==='green'?'#f0faf2':'#edeae0';
+
+        html+=`<div style="border:0.5px solid ${borderC2};border-radius:3px;background:#fafaf8;overflow:hidden;">`;
+        html+=`<div style="background:${bgH2};padding:4px 6px;border-bottom:0.5px solid #ddd9cf;">`;
+        if(ch.id) html+=`<span style="font-family:'DM Mono',monospace;font-size:7px;color:#7a7568;">${ch.id}　</span>`;
+        html+=`<span style="font-size:9.5px;font-weight:500;line-height:1.25;">${ch.name||''}</span></div>`;
+        html+=`<div style="padding:5px 6px;">`;
+        html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">`;
+        html+=pie(ch.pct||0,28,ck2);
+        html+=`<div><div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:${c2.fill};line-height:1;">${ch.value||''}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:7px;color:#7a7568;">${ch.abs||''}</div></div>`;
+        html+=`</div>`;
+        if(ch.detail) html+=`<div style="font-size:8.5px;color:#7a7568;line-height:1.5;">${ch.detail}</div>`;
+        if(ch.tags&&ch.tags.length){
+          const tgs=ch.tags.map(t=>{
+            const tc=t.color==='red'?{bg:'#fde8e8',bc:'#d4604a',tx:'#8c1c10'}:t.color==='amber'?{bg:'#fff8ed',bc:'#e0a84a',tx:'#7a4a00'}:t.color==='green'?{bg:'#f0faf2',bc:'#8ecba0',tx:'#1a5c2a'}:{bg:'#edeae0',bc:'#c8c3b5',tx:'#7a7568'};
+            return `<span style="font-family:'DM Mono',monospace;font-size:7px;padding:1px 4px;border-radius:2px;background:${tc.bg};border:0.5px solid ${tc.bc};color:${tc.tx};">${t.label}</span>`;
+          }).join('');
+          html+=`<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;">${tgs}</div>`;
+        }
+        html+=`</div></div>`;
+      });
+      html+=`</div>`;
+    }
+
+    html+=`</div></div>`;
+  });
+
+  html+=`</div>`;
+  return html;
+}
+
+async function generateAtlas(){
+  const topic=document.getElementById('topic-in').value.trim();
+  if(!topic){alert('トピックを入力してください');return;}
+  document.getElementById('atlas').innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:#7a7568;">
+    <div style="width:14px;height:14px;border:2px solid #ddd9cf;border-top-color:#13120f;border-radius:50%;animation:spin 0.7s linear infinite;"></div>「${topic}」のアトラスを生成中…</div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+
+  const prompt=`以下のトピックについて、ナレッジハーネスアトラス形式のJSONを生成してください。
+
+トピック: ${topic}
+
+以下のJSON形式で返してください（コードブロックなし、純粋なJSONのみ）:
+{
+  "title": "タイトル",
+  "l1Title": "L1セクション名",
+  "root": {
+    "name": "ルート概念名",
+    "sub": "補足",
+    "desc": "説明文（1〜2文）",
+    "pctLabel": "代表パーセント説明",
+    "segments": [
+      {"pct": 数値, "color": "#hex", "opacity": 0.85, "label": "ラベル"}
+    ],
+    "tags": [
+      {"label": "タグ", "bg": "#hex", "border": "#hex", "color": "#hex"}
+    ]
+  },
+  "nodes": [
+    {
+      "id": "L1·①",
+      "name": "ノード名",
+      "pct": 数値,
+      "value": "表示値",
+      "abs": "補足説明",
+      "detail": "詳細（1文）",
+      "colorKey": "blue|green|amber|red|purple|teal|gray",
+      "childLabel": "子セクション名",
+      "children": [
+        {
+          "id": "①-A",
+          "name": "子ノード名",
+          "pct": 数値,
+          "value": "表示値",
+          "abs": "補足",
+          "detail": "詳細（短く）",
+          "colorKey": "colorKey",
+          "tags": [{"label": "タグ", "color": "red|amber|green|blue|"}]
+        }
+      ]
+    }
+  ]
+}
+
+rules:
+- L1ノードは3〜6個、各ノードのpct合計は100
+- 子ノードは2〜4個、子のpct合計は100
+- colorKey: 禁忌→red, 注意→amber, 推奨→green, 標準→blue, 希少→teal, その他→gray
+- 日本語で記述、JSONのみ出力`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await res.json();
+    const text=(d.content||[]).map(b=>b.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const data=JSON.parse(clean);
+    document.getElementById('atlas').innerHTML=renderAtlas(data);
+    document.getElementById('h-title').textContent=topic;
+    document.getElementById('st').textContent=`生成済 · ${topic}`;
+  }catch(e){
+    document.getElementById('atlas').innerHTML=`<div style="padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:#c84030;">エラー: ${e.message}</div>`;
+  }
+}
+
+function loadDemo(){
+  const data={
+    title:'エンレスト® 市場アトラス',
+    l1Title:'心不全 130万人 · 全層俯瞰',
+    root:{
+      name:'日本人口 1億2,000万人',
+      sub:'心不全患者は約130万人（1.1%）',
+      desc:'高齢化に伴い2030年には150万人超が見込まれる。エンレストの防衛格子が必要なのは適応層70%（約91万人）。',
+      pctLabel:'心不全 = 人口の 1.1%',
+      segments:[
+        {pct:1.1,color:'#c84030',opacity:0.9},{pct:5.2,color:'#e0a84a',opacity:0.8},{pct:93.7,color:'#e8e4dc',opacity:0.6}
+      ],
+      tags:[
+        {label:'心不全 130万人（1.1%）',bg:'#f0faf2',border:'#8ecba0',color:'#1a5c2a'},
+        {label:'その他循環器 620万人（5.2%）',bg:'#fff8ed',border:'#e0a84a',color:'#7a4a00'},
+        {label:'心疾患なし 1.125億人',bg:'#edeae0',border:'#c8c3b5',color:'#7a7568'}
+      ]
+    },
+    nodes:[
+      {id:'L1·①',name:'HFrEF 収縮能低下型',pct:30.8,value:'約40万人',abs:'心不全の30.8%',detail:'LVEF≦40%。エンレスト主戦場。死亡率20%↓（PARADIGM-HF）。',colorKey:'green',childLabel:'Fantastic 4 実装状況',
+        children:[
+          {id:'①-A',name:'F4全実装',pct:15,value:'約6万人',abs:'HFrEFの15%',detail:'ARNI+β遮断薬+MRA+SGLT2i全4剤。',colorKey:'green',tags:[]},
+          {id:'①-B',name:'エンレスト処方中',pct:35,value:'約14万人',abs:'HFrEFの35%',detail:'増量・追加の余地あり。',colorKey:'blue',tags:[]},
+          {id:'①-C',name:'ACEi/ARB継続',pct:30,value:'約12万人',abs:'HFrEFの30%',detail:'切替候補。36h確認が移行の鍵。',colorKey:'amber',tags:[{label:'36h確認必須',color:'amber'}]},
+          {id:'①-D',name:'RAAS阻害薬なし',pct:20,value:'約8万人',abs:'HFrEFの20%',detail:'低血圧・腎機能・経済的理由で非適応。',colorKey:'gray',tags:[{label:'緩和ケア',color:''}]}
+        ]},
+      {id:'L1·②',name:'HFpEF / HFmrEF 収縮能維持',pct:46,value:'約60万人',abs:'心不全の46%',detail:'最も急拡大。SGLT2i併用が主戦場。高齢女性に多い。',colorKey:'blue',childLabel:'HFpEF 治療状況',
+        children:[
+          {id:'②-A',name:'SGLT2i処方中',pct:25,value:'約15万人',abs:'HFpEFの25%',detail:'再入院阻止エビデンスが最厚。',colorKey:'green',tags:[]},
+          {id:'②-B',name:'エンレスト処方中',pct:10,value:'約6万人',abs:'HFpEFの10%',detail:'2024年適応拡大後に急拡大。',colorKey:'blue',tags:[]},
+          {id:'②-C',name:'ARB/ACEi単独',pct:30,value:'約18万人',abs:'HFpEFの30%',detail:'追加の余地あり。高齢女性・多病管理。',colorKey:'amber',tags:[]},
+          {id:'②-D',name:'症状管理のみ',pct:35,value:'約21万人',abs:'HFpEFの35%',detail:'低血圧・腎機能低下でQOL管理が主眼。',colorKey:'red',tags:[{label:'QOL管理',color:''}]}
+        ]},
+      {id:'L1·③',name:'高血圧（心不全なし）',pct:8,value:'数百万人規模',abs:'適応は限定的（数%）',detail:'難治性高血圧への最終手段。ACEi/ARBと併用禁忌。',colorKey:'purple',childLabel:'高血圧 治療層構造',
+        children:[
+          {id:'③-A',name:'ARB/ACEi（一次選択）',pct:60,value:'大多数',abs:'高血圧の60%',detail:'エンレストと併用禁忌（36時間ルール）。',colorKey:'gray',tags:[{label:'エンレストと併用禁忌',color:'red'}]},
+          {id:'③-B',name:'Ca拮抗薬・利尿薬',pct:25,value:'多数',abs:'高血圧の25%',detail:'多剤で管理。コントロール良好なら切替不要。',colorKey:'gray',tags:[]},
+          {id:'③-C',name:'エンレスト適応（難治性）',pct:5,value:'少数',abs:'高血圧の5%',detail:'3剤以上でも不良な難治性への最終手段。',colorKey:'purple',tags:[{label:'最終手段的位置づけ',color:'blue'}]}
+        ]},
+      {id:'L1·④',name:'小児 慢性心不全',pct:0.3,value:'3〜5千人',abs:'希少 · 前年比数倍',detail:'2024年粒状錠発売がトリガー。専門施設・大学病院が対象。',colorKey:'teal',childLabel:'小児心不全 原因別',
+        children:[
+          {id:'④-A',name:'先天性心疾患（CHD）',pct:47,value:'1,600〜2,350人',abs:'小児心不全の47%',detail:'最も多い原因。術後管理が中心。',colorKey:'red',tags:[]},
+          {id:'④-B',name:'心筋症',pct:29,value:'870〜1,450人',abs:'小児心不全の29%',detail:'拡張型心筋症が中心。成人と類似した薬物療法。',colorKey:'amber',tags:[]},
+          {id:'④-C',name:'心筋炎後遺症・その他',pct:24,value:'720〜1,200人',abs:'小児心不全の24%',detail:'川崎病後遺症・不整脈原性など。',colorKey:'gray',tags:[]}
+        ]},
+      {id:'L1·⑤',name:'非適応層 リーチ外',pct:30,value:'約39万人',abs:'130万人中の30%',detail:'禁忌10% + 慎重15% + 障壁5%。防衛格子の完成条件。',colorKey:'red',childLabel:'非適応層の構造',
+        children:[
+          {id:'非①',name:'禁忌・重症層',pct:33,value:'約13万人',abs:'非適応の33%',detail:'重度腎不全・血管浮腫既往・妊婦。絶対禁忌。',colorKey:'red',tags:[{label:'緩和ケア',color:'red'},{label:'伝統的利尿剤',color:'red'}]},
+          {id:'非②',name:'慎重投与・不耐容層',pct:50,value:'約20万人',abs:'非適応の50%',detail:'低血圧リスク高い超高齢者・高K血症。',colorKey:'amber',tags:[{label:'ACEi/ARB継続',color:'amber'}]},
+          {id:'非③',name:'経済的・心理的障壁',pct:17,value:'約6万人',abs:'非適応の17%',detail:'現状維持バイアス・ジェネリック安定層。',colorKey:'gray',tags:[{label:'既存薬（安定重視）',color:''}]}
+        ]}
+    ]
+  };
+  document.getElementById('atlas').innerHTML=renderAtlas(data);
+  document.getElementById('h-title').textContent='エンレスト®';
+  document.getElementById('topic-in').value='エンレスト市場（デモ）';
+  document.getElementById('st').textContent='デモデータ · エンレスト市場構造';
+}
+
+document.getElementById('topic-in').addEventListener('keydown',e=>{if(e.key==='Enter')generateAtlas();});
+</script>
+</body></html>
