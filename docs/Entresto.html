@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KH · 市場ディレクトリ · v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,700&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════
+   BASE
+════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#13120f;
+  --paper:#f4f1eb;
+  --cream:#edeae0;
+  --muted:#7a7568;
+  --hint:#b8b3a8;
+  --border:#ddd9cf;
+  --border2:#c8c3b5;
+  --mono:'DM Mono',monospace;
+  --sans:'Noto Sans JP',sans-serif;
+  --serif:'Fraunces',serif;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);min-height:100vh;}
+
+/* ════════════════════════════════
+   HEADER
+════════════════════════════════ */
+header{
+  background:var(--ink);
+  padding:0 24px;height:52px;
+  display:flex;align-items:center;gap:14px;
+  border-bottom:2px solid #222;
+}
+.h-id{font-family:var(--mono);font-size:10px;color:#555;letter-spacing:0.14em;}
+.h-drug{font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.02em;margin-left:10px;}
+.h-sub{font-size:11px;color:#666;font-weight:300;}
+.h-badge{font-family:var(--mono);font-size:9px;border:1px solid;padding:2px 8px;border-radius:2px;margin-left:auto;}
+.hb-v{border-color:#c84030;color:#c84030;}
+.hb-n{border-color:#444;color:#888;}
+
+/* ════════════════════════════════
+   TREE WRAPPER
+════════════════════════════════ */
+.tree-page{
+  padding:24px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+.page-title{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:0.14em;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.page-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ════════════════════════════════
+   LEGEND
+════════════════════════════════ */
+.legend{
+  display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  align-items:center;
+}
+.leg{display:flex;align-items:center;gap:6px;}
+.leg-swatch{width:12px;height:12px;border-radius:2px;border:1px solid;}
+.leg-drill{background:#e8f0fe;border-color:#4a6fc8;}
+.leg-leaf{background:#f4f1eb;border-color:#c8c3b5;}
+.leg-warn{background:#fde8e8;border-color:#d4604a;}
+
+/* ════════════════════════════════
+   TREE STRUCTURE
+════════════════════════════════ */
+.tree{display:flex;flex-direction:column;gap:0;}
+
+/* ROOT NODE */
+.root-node{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:0;
+  margin-bottom:16px;
+}
+.root-chart-wrap{
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 20px 16px 0;
+  border-right:2px solid var(--border2);
+  margin-right:20px;
+}
+.root-label{
+  font-family:var(--serif);font-size:22px;font-weight:700;
+  letter-spacing:-0.02em;margin-bottom:2px;
+}
+.root-sub{font-size:11px;color:var(--muted);}
+.root-pct{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  margin-top:4px;
+}
+.root-info{
+  padding:14px 0;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.root-desc{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px;}
+
+/* L1 ROW */
+.l1-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:10px;
+}
+
+/* ── NODE BASE ── */
+.node{
+  border:1px solid var(--border);
+  border-radius:4px;
+  background:#fff;
+  overflow:hidden;
+  transition:box-shadow 0.15s;
+}
+.node:hover{box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+
+/* drillable = has children */
+.node.has-child{
+  border-color:#4a6fc8;
+  cursor:pointer;
+}
+.node.has-child .node-head{background:#e8f0fe;}
+
+/* leaf = no children */
+.node.leaf{border-color:var(--border2);}
+.node.leaf .node-head{background:var(--cream);}
+
+/* critical = Layer3 */
+.node.critical{border-color:#d4604a;}
+.node.critical .node-head{background:#fde8e8;}
+
+/* warn = Layer2 */
+.node.warn-node{border-color:#e0a84a;}
+.node.warn-node .node-head{background:#fff8ed;}
+
+.node-head{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.node-id{
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  letter-spacing:0.08em;flex-shrink:0;
+}
+.node-name{font-size:11.5px;font-weight:500;flex:1;line-height:1.3;}
+.drill-arrow{
+  font-size:10px;color:#4a6fc8;flex-shrink:0;
+  transition:transform 0.18s;
+}
+.node.open .drill-arrow{transform:rotate(90deg);}
+
+.node-body{padding:8px 10px;}
+
+/* pie + stats row */
+.node-stats{
+  display:flex;align-items:center;gap:10px;margin-bottom:7px;
+}
+.node-pie{flex-shrink:0;}
+.node-nums{flex:1;}
+.node-pct{
+  font-family:var(--mono);font-size:16px;font-weight:500;
+  line-height:1;margin-bottom:2px;
+}
+.node-abs{font-family:var(--mono);font-size:9px;color:var(--muted);}
+
+.node-detail{
+  font-size:10.5px;color:var(--muted);line-height:1.65;
+  border-top:1px solid var(--border);
+  padding-top:7px;margin-top:2px;
+}
+
+/* ── CHILDREN AREA ── */
+.children{
+  display:none;
+  padding:10px 10px 10px 20px;
+  border-top:1px solid var(--border);
+  background:var(--paper);
+}
+.node.open>.children{display:block;}
+
+.children-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:8px;
+}
+
+/* L2 nodes slightly smaller */
+.l2 .node-name{font-size:11px;}
+.l2 .node-pct{font-size:13px;}
+
+/* destination tag */
+.dest-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.dest-tag{
+  font-family:var(--mono);font-size:9px;letter-spacing:0.06em;
+  padding:2px 7px;border-radius:2px;
+  background:var(--cream);border:1px solid var(--border2);
+  color:var(--muted);
+}
+.dest-tag.red{background:#fde8e8;border-color:#d4604a;color:#8c1c10;}
+.dest-tag.amber{background:#fff8ed;border-color:#e0a84a;color:#7a4a00;}
+.dest-tag.green{background:#f0faf2;border-color:#8ecba0;color:#1a5c2a;}
+.dest-tag.blue{background:#e8f0fe;border-color:#4a6fc8;color:#1a3580;}
+
+/* ════════════════════════════════
+   COMPARE STRIP (bottom)
+════════════════════════════════ */
+.compare-strip{
+  margin-top:24px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:4px;
+  overflow:hidden;
+}
+.cs-head{
+  background:var(--ink);color:#eee;
+  padding:8px 16px;
+  font-family:var(--mono);font-size:9px;letter-spacing:0.12em;
+  display:flex;align-items:center;gap:10px;
+}
+.cs-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:0;
+}
+.cs-item{
+  padding:12px 14px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.cs-item:last-child{border-right:none;}
+.cs-drug{font-size:12px;font-weight:500;margin-bottom:5px;}
+.cs-pos{font-size:11px;color:#1a5c2a;line-height:1.6;}
+.cs-neg{font-size:11px;color:#8c1c10;line-height:1.6;margin-top:2px;}
+
+/* ════════════════════════════════
+   STATUS
+════════════════════════════════ */
+.statusbar{
+  background:var(--ink);color:#555;
+  padding:7px 24px;
+  display:flex;align-items:center;gap:16px;
+  font-family:var(--mono);font-size:9px;letter-spacing:0.08em;
+  border-top:1px solid #222;flex-wrap:wrap;
+  margin-top:24px;
+}
+.draft{margin-left:auto;font-style:italic;color:#333;}
+
+/* ════════════════════════════════
+   NOTIF
+════════════════════════════════ */
+.notif{
+  position:fixed;bottom:16px;right:16px;
+  background:var(--ink);color:#eee;
+  font-family:var(--mono);font-size:10px;
+  padding:6px 14px;border-radius:3px;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.2s;z-index:999;
+}
+.notif.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="h-id">KH · MKT · v6</span>
+  <span class="h-drug">エンレスト®</span>
+  <span class="h-sub">市場ディレクトリ · 一覧ツリー</span>
+  <span class="h-badge hb-v">ノード内円グラフ</span>
+  <span class="h-badge hb-n">PI 2025.09</span>
+</header>
+
+<div class="tree-page">
+
+  <div class="page-title">MARKET DIRECTORY · 疾患階層ツリー · 全層一覧表示</div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-swatch leg-drill"></div>展開可能（下層あり）</div>
+    <div class="leg"><div class="leg-swatch leg-leaf"></div>末端ノード（下層なし）</div>
+    <div class="leg"><div class="leg-swatch leg-warn"></div>注意・慎重層</div>
+    <div class="leg"><div class="leg-swatch" style="background:#fde8e8;border-color:#d4604a;"></div>禁忌・重症層</div>
+    <span style="margin-left:auto;font-size:10px;">▶ 青枠ノードをクリックで展開</span>
+  </div>
+
+  <!-- ══════════════════════════════
+       ROOT: 日本人口
+  ══════════════════════════════ -->
+  <div class="root-node">
+    <div class="root-chart-wrap">
+      <!-- SVG: 日本人口 内訳 -->
+      <svg viewBox="0 0 120 120" width="120" height="120">
+        <!-- 心不全 1.1% -->
+        <path d="M60,60 L60,4 A56,56 0 0,1 63.47,4.05 Z" fill="#c84030" opacity="0.9"/>
+        <!-- 循環器 5.2% -->
+        <path d="M60,60 L63.47,4.05 A56,56 0 0,1 85.1,9.8 Z" fill="#e0a84a" opacity="0.8"/>
+        <!-- 健常者 93.7% -->
+        <path d="M60,60 L85.1,9.8 A56,56 0 1,1 60,4 Z" fill="#e8e4dc" opacity="0.7"/>
+        <circle cx="60" cy="60" r="32" fill="#f4f1eb"/>
+        <text x="60" y="56" text-anchor="middle" font-family="'DM Mono',monospace" font-size="11" font-weight="500" fill="#13120f">1.2億人</text>
+        <text x="60" y="69" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#7a7568">日本総人口</text>
+      </svg>
+      <div class="root-pct">心不全 = 人口の <strong>1.1%</strong></div>
+    </div>
+    <div class="root-info">
+      <div class="root-label">日本人口 1億2,000万人</div>
+      <div class="root-sub" style="font-size:12px;color:var(--muted);margin-top:4px;">← 円グラフは全人口に対する心疾患の割合</div>
+      <div class="root-desc" style="margin-top:10px;">
+        心不全患者は約130万人（人口の1.1%）。高齢化に伴い2030年には150万人超が見込まれる。
+        エンレストの防衛格子が必要なのは、この130万人の<strong>70%（約91万人）</strong>が対象となる適応層。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="dest-tag green">心不全 130万人（1.1%）</span>
+        <span class="dest-tag amber">その他循環器疾患 約620万人（5.2%）</span>
+        <span class="dest-tag" style="">心疾患なし 約1.125億人（93.7%）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       L1: 心不全 130万人
+  ══════════════════════════════ -->
+  <div class="page-title" style="margin-top:8px;">心不全 130万人 · 内訳ツリー</div>
+
+  <div class="l1-grid">
+
+    <!-- ① HFrEF -->
+    <div class="node has-child" onclick="tog(this)">
+      <div class="node-head">
+        <span class="node-id">L1·①</span>
+        <span class="node-name">HFrEF<br>収縮能低下型</span>
+        <span class="drill-arrow">▶</span>
+      </div>
+      <div class="node-body">
+        <div class="node-stats">
+          <svg class="node-pie" viewBox="0 0 48 48" width="48" height="48">
+            <!-- 30.8% of 130万 -->
+            <circle cx="24" cy="24" r="20" fill="#e8f0fe" stroke="#4a6fc8" stroke-width="1"/>
+            <path d="M24,24 L24,4 A20,20 0 0,1 34.3,7.3 Z" fill="#1a5c2a" opacity="0.85"/>
+            <path d="M24,24 L34.3,7.3 A20,20 0 0,1 44,24 Z" fill="#4a9c6a" opacity="0.7"/>
+            <path d="M24,24 L44,24 A20,20 0 0,1 30.7,40.7 Z" fill="#8ecba0" opacity="0.6"/>
+            <path d="M24,24 L30.7,40.7 A20,20 0 0,1 24,4 Z" fill="#e0ddd6" opacity="0.5"/>
+            <circle cx="24" cy="24" r="11" fill="#fff"/>
+            <text x="24" y="27" text-anchor="middle" font-family="'DM Mono',monospace" font-size="7" fill="#1a5c2a" font-weight="500">30.8%</text>
+          </svg>
+          <div class="node-nums">
+            <div class="node-pct" style="color:#1a5c2a;">約40万人</div>
+            <div class="node-abs">心不全全体の30.8%</div>
+          </div>
+        </div>
+        <div class="node-detail">LVEF≦40%。エンレストの主戦場。死亡率20%↓（PARADIGM-HF）。</div>
+      </div>
+      <!-- L2 children -->
+      <div class="children">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">HFrEF · Fantastic 4 実装状況</div>
+        <div class="children-grid l2">
+
+          <div class="node has-child" onclick="tog(this);event.stopPropagation()">
+            <div class="node-head"><span class="node-id">①-A</span><span class="node-name">Fantastic 4<br>全実装</span><span class="drill-arrow">▶</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f0faf2" stroke="#8ecba0" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 27.1,5.6 Z" fill="#1a5c2a"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#1a5c2a" font-weight="500">15%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#1a5c2a;">約6万人</div>
+                  <div class="node-abs">HFrEFの15%</div>
+                </div>
+              </div>
+              <div class="node-detail">ARNI＋β遮断薬＋MRA＋SGLT2iの全4剤。ガイドライン推奨の最高峰。まだ少ない。</div>
+            </div>
+            <div class="children">
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">
+                <strong style="color:var(--ink);">4剤の役割分担：</strong><br>
+                ARNI（エンレスト）：心保護・再入院減少<br>
+                β遮断薬：心拍数管理・心臓リモデリング抑制<br>
+                MRA（スピロノラクトン等）：体液管理<br>
+                SGLT2i（ダパグリフロジン等）：再入院阻止・腎保護
+              </div>
+            </div>
+          </div>
+
+          <div class="node leaf">
+            <div class="node-head"><span class="node-id">①-B</span><span class="node-name">エンレスト処方中<br>（F4未達）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f0faf2" stroke="#8ecba0" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#4a9c6a"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 25.9,35.8 Z" fill="#8ecba0" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#4a9c6a" font-weight="500">35%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#4a9c6a;">約14万人</div>
+                  <div class="node-abs">HFrEFの35%</div>
+                </div>
+              </div>
+              <div class="node-detail">増量・追加の余地あり。<strong>服薬指導が最も効果的な層。</strong></div>
+            </div>
+          </div>
+
+          <div class="node warn-node leaf">
+            <div class="node-head"><span class="node-id">①-C</span><span class="node-name">ACEi/ARB継続<br>（未切替）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fff8ed" stroke="#e0a84a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#e0a84a"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 20,37 Z" fill="#f5d08a" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a4a00" font-weight="500">30%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#e0a84a;">約12万人</div>
+                  <div class="node-abs">HFrEFの30%</div>
+                </div>
+              </div>
+              <div class="node-detail">切替候補層。<strong>36時間ウォッシュアウト</strong>の説明が移行の鍵。</div>
+              <div class="dest-tags"><span class="dest-tag amber">切替時 36h確認必須</span></div>
+            </div>
+          </div>
+
+          <div class="node leaf" style="border-color:var(--border2);">
+            <div class="node-head"><span class="node-id">①-D</span><span class="node-name">RAAS阻害薬なし<br>その他</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f4f1eb" stroke="#c8c3b5" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 27.1,5.6 Z" fill="#b0ab9e"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a7568" font-weight="500">20%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:var(--muted);">約8万人</div>
+                  <div class="node-abs">HFrEFの20%</div>
+                </div>
+              </div>
+              <div class="node-detail">低血圧・腎機能・経済的理由で非適応。</div>
+              <div class="dest-tags"><span class="dest-tag">非薬物療法</span><span class="dest-tag">緩和ケア</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ② HFpEF -->
+    <div class="node has-child" onclick="tog(this)">
+      <div class="node-head">
+        <span class="node-id">L1·②</span>
+        <span class="node-name">HFpEF / HFmrEF<br>収縮能維持・軽度低下</span>
+        <span class="drill-arrow">▶</span>
+      </div>
+      <div class="node-body">
+        <div class="node-stats">
+          <svg class="node-pie" viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="24" cy="24" r="20" fill="#e8f0fe" stroke="#4a6fc8" stroke-width="1"/>
+            <path d="M24,24 L24,4 A20,20 0 1,1 18.9,4.4 Z" fill="#2a7acc" opacity="0.8"/>
+            <path d="M24,24 L18.9,4.4 A20,20 0 0,1 24,4 Z" fill="#7ab0ff" opacity="0.6"/>
+            <circle cx="24" cy="24" r="11" fill="#fff"/>
+            <text x="24" y="27" text-anchor="middle" font-family="'DM Mono',monospace" font-size="7" fill="#2a7acc" font-weight="500">46%</text>
+          </svg>
+          <div class="node-nums">
+            <div class="node-pct" style="color:#2a7acc;">約60万人</div>
+            <div class="node-abs">心不全全体の46% · 前年比+45%↑</div>
+          </div>
+        </div>
+        <div class="node-detail">最も急拡大している層。SGLT2i併用が主戦場。高齢女性に多い。</div>
+      </div>
+      <div class="children">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">HFpEF · 治療状況</div>
+        <div class="children-grid l2">
+          <div class="node leaf" style="border-color:#8ecba0;">
+            <div class="node-head"><span class="node-id">②-A</span><span class="node-name">SGLT2i処方中</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f0faf2" stroke="#8ecba0" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 28.5,5.3 Z" fill="#1a5c2a"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#1a5c2a" font-weight="500">25%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#1a5c2a;">約15万人</div>
+                  <div class="node-abs">HFpEFの25%</div>
+                </div>
+              </div>
+              <div class="node-detail">再入院阻止に最もエビデンスが厚い。エンレストとの併用拡大中。</div>
+            </div>
+          </div>
+          <div class="node leaf" style="border-color:#8ecba0;">
+            <div class="node-head"><span class="node-id">②-B</span><span class="node-name">エンレスト処方中<br>（2024年適応拡大）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f0faf2" stroke="#8ecba0" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 23.5,3.2 Z" fill="#4a9c6a"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#4a9c6a" font-weight="500">10%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#4a9c6a;">約6万人</div>
+                  <div class="node-abs">HFpEFの10%</div>
+                </div>
+              </div>
+              <div class="node-detail">2024年適応拡大後に急拡大。LVEF50%以上への適応が鍵。</div>
+            </div>
+          </div>
+          <div class="node warn-node leaf">
+            <div class="node-head"><span class="node-id">②-C</span><span class="node-name">ARB/ACEi単独</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fff8ed" stroke="#e0a84a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#e0a84a"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 20,37 Z" fill="#f5d08a" opacity="0.6"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a4a00" font-weight="500">30%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#e0a84a;">約18万人</div>
+                  <div class="node-abs">HFpEFの30%</div>
+                </div>
+              </div>
+              <div class="node-detail">SGLT2iまたはエンレスト追加の余地あり。高齢女性・多病管理が中心。</div>
+            </div>
+          </div>
+          <div class="node leaf">
+            <div class="node-head"><span class="node-id">②-D</span><span class="node-name">症状管理のみ<br>（利尿剤中心）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fef0ee" stroke="#d4604a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#d4604a"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 25,36.6 Z" fill="#e8a090" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#8c1c10" font-weight="500">35%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#d4604a;">約21万人</div>
+                  <div class="node-abs">HFpEFの35%</div>
+                </div>
+              </div>
+              <div class="node-detail">低血圧・腎機能低下・多剤併用で積極的薬物療法が困難。QOL管理が主眼。</div>
+              <div class="dest-tags"><span class="dest-tag">QOL管理</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 高血圧 -->
+    <div class="node has-child" onclick="tog(this)">
+      <div class="node-head">
+        <span class="node-id">L1·③</span>
+        <span class="node-name">高血圧<br>（心不全なし）</span>
+        <span class="drill-arrow">▶</span>
+      </div>
+      <div class="node-body">
+        <div class="node-stats">
+          <svg class="node-pie" viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="24" cy="24" r="20" fill="#f3eaff" stroke="#9b59b6" stroke-width="1"/>
+            <path d="M24,24 L24,4 A20,20 0 0,1 27.2,4.2 Z" fill="#9b59b6" opacity="0.8"/>
+            <circle cx="24" cy="24" r="11" fill="#fff"/>
+            <text x="24" y="27" text-anchor="middle" font-family="'DM Mono',monospace" font-size="7" fill="#9b59b6" font-weight="500">8%</text>
+          </svg>
+          <div class="node-nums">
+            <div class="node-pct" style="color:#9b59b6;">数百万人規模</div>
+            <div class="node-abs">エンレスト適応は限定的（数%）</div>
+          </div>
+        </div>
+        <div class="node-detail">既存薬でコントロール不良な難治性高血圧への最終手段。ACEi/ARBと併用禁忌。</div>
+      </div>
+      <div class="children">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">高血圧 · 治療層の構造</div>
+        <div class="children-grid l2">
+          <div class="node leaf" style="border-color:#8ecba0;">
+            <div class="node-head"><span class="node-id">③-A</span><span class="node-name">ARB/ACEi<br>（一次選択）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f0faf2" stroke="#8ecba0" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 1,1 19.2,3 Z" fill="#1a5c2a" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#1a5c2a" font-weight="500">60%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#1a5c2a;">大多数</div>
+                  <div class="node-abs">高血圧の60%</div>
+                </div>
+              </div>
+              <div class="node-detail">高血圧の標準治療。エンレストへの切替対象にならない。<br>エンレストと<strong>併用禁忌</strong>（36時間ルール）。</div>
+              <div class="dest-tags"><span class="dest-tag red">エンレストと併用禁忌</span></div>
+            </div>
+          </div>
+          <div class="node leaf">
+            <div class="node-head"><span class="node-id">③-B</span><span class="node-name">Ca拮抗薬・利尿薬<br>（多剤併用）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f4f1eb" stroke="#c8c3b5" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 28.5,5.3 Z" fill="#b0ab9e"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a7568" font-weight="500">25%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:var(--muted);">多数</div>
+                  <div class="node-abs">高血圧の25%</div>
+                </div>
+              </div>
+              <div class="node-detail">2〜3剤の組み合わせで管理。コントロール良好なら切替不要。</div>
+            </div>
+          </div>
+          <div class="node leaf" style="border-color:#9b59b6;">
+            <div class="node-head"><span class="node-id">③-C</span><span class="node-name">エンレスト適応<br>（難治性）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f3eaff" stroke="#9b59b6" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 21.5,3.1 Z" fill="#9b59b6"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#9b59b6" font-weight="500">5%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#9b59b6;">少数</div>
+                  <div class="node-abs">高血圧の5%</div>
+                </div>
+              </div>
+              <div class="node-detail">既存3剤以上でも不良な難治性。エンレストの最終手段的適応。</div>
+              <div class="dest-tags"><span class="dest-tag blue">最終手段的位置づけ</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 小児 -->
+    <div class="node has-child" onclick="tog(this)">
+      <div class="node-head">
+        <span class="node-id">L1·④</span>
+        <span class="node-name">小児<br>慢性心不全</span>
+        <span class="drill-arrow">▶</span>
+      </div>
+      <div class="node-body">
+        <div class="node-stats">
+          <svg class="node-pie" viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="24" cy="24" r="20" fill="#e0f7f4" stroke="#16a085" stroke-width="1"/>
+            <path d="M24,24 L24,4 A20,20 0 0,1 24.6,4 Z" fill="#16a085" opacity="0.8"/>
+            <circle cx="24" cy="24" r="11" fill="#fff"/>
+            <text x="24" y="27" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#16a085" font-weight="500">&lt;1%</text>
+          </svg>
+          <div class="node-nums">
+            <div class="node-pct" style="color:#16a085;">3〜5千人</div>
+            <div class="node-abs">希少 · 前年比数倍↑↑</div>
+          </div>
+        </div>
+        <div class="node-detail">2024年粒状錠発売がトリガー。専門施設・大学病院門前が在庫管理の対象。</div>
+      </div>
+      <div class="children">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">小児心不全 · 原因別構成</div>
+        <div class="children-grid l2">
+          <div class="node leaf" style="border-color:#c84030;">
+            <div class="node-head"><span class="node-id">④-A</span><span class="node-name">先天性心疾患（CHD）</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fde8e8" stroke="#d4604a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#c84030"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 24.7,36.7 Z" fill="#e89080" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#8c1c10" font-weight="500">47%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#c84030;">約1,600〜2,350人</div>
+                  <div class="node-abs">小児心不全の47%</div>
+                </div>
+              </div>
+              <div class="node-detail">最も多い原因。術後管理が中心。専門施設での長期フォローが必要。</div>
+            </div>
+          </div>
+          <div class="node leaf" style="border-color:#e0a84a;">
+            <div class="node-head"><span class="node-id">④-B</span><span class="node-name">心筋症</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fff8ed" stroke="#e0a84a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 30.3,7.8 Z" fill="#e0a84a"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a4a00" font-weight="500">29%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#e0a84a;">約870〜1,450人</div>
+                  <div class="node-abs">小児心不全の29%</div>
+                </div>
+              </div>
+              <div class="node-detail">拡張型心筋症が中心。成人と類似した薬物療法が適用可能。</div>
+            </div>
+          </div>
+          <div class="node leaf">
+            <div class="node-head"><span class="node-id">④-C</span><span class="node-name">心筋炎後遺症・その他</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f4f1eb" stroke="#c8c3b5" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 25.8,4.6 Z" fill="#b0ab9e"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a7568" font-weight="500">24%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:var(--muted);">約720〜1,200人</div>
+                  <div class="node-abs">小児心不全の24%</div>
+                </div>
+              </div>
+              <div class="node-detail">川崎病後遺症・不整脈原性など。</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:9px 11px;background:#fff;border:1px solid var(--border);border-radius:3px;font-size:11px;color:var(--muted);line-height:1.7;">
+          <strong style="color:var(--ink);">粒状錠（2024年発売）の注意点：</strong><br>
+          体重別用量設計 · 成人錠と規格が異なる · 専門施設門前での在庫管理が必要
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ 非適応層 -->
+    <div class="node critical has-child" onclick="tog(this)" style="grid-column:1/-1;">
+      <div class="node-head">
+        <span class="node-id">L1·非適応</span>
+        <span class="node-name">非適応層 — 130万人中 約30%（≈39万人）がリーチ外</span>
+        <span class="drill-arrow">▶</span>
+      </div>
+      <div class="node-body">
+        <div class="node-stats">
+          <svg class="node-pie" viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="24" cy="24" r="20" fill="#fde8e8" stroke="#d4604a" stroke-width="1"/>
+            <path d="M24,24 L24,4 A20,20 0 0,1 34.3,7.3 Z" fill="#c84030"/>
+            <path d="M24,24 L34.3,7.3 A20,20 0 0,1 44,24 Z" fill="#e0a84a"/>
+            <path d="M24,24 L44,24 A20,20 0 0,1 37.3,37 Z" fill="#95a5a6"/>
+            <circle cx="24" cy="24" r="11" fill="#fff"/>
+            <text x="24" y="27" text-anchor="middle" font-family="'DM Mono',monospace" font-size="7" fill="#8c1c10" font-weight="500">30%</text>
+          </svg>
+          <div class="node-nums">
+            <div class="node-pct" style="color:#c84030;">約39万人</div>
+            <div class="node-abs">禁忌10% ＋ 慎重15% ＋ 障壁5%</div>
+          </div>
+        </div>
+        <div class="node-detail">エンレストが届かない・届けてはいけない層の構造。行き先を把握することが防衛格子の完成条件。</div>
+      </div>
+      <div class="children">
+        <div class="children-grid l2">
+          <div class="node critical leaf">
+            <div class="node-head"><span class="node-id">非①</span><span class="node-name">禁忌・重症層</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fde8e8" stroke="#d4604a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 25.8,4.6 Z" fill="#c84030"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#8c1c10" font-weight="500">10%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#c84030;">約13万人</div>
+                  <div class="node-abs">非適応層の33%</div>
+                </div>
+              </div>
+              <div class="node-detail">重度腎不全(eGFR&lt;15)・血管浮腫既往・妊婦。投与絶対禁忌。</div>
+              <div class="dest-tags"><span class="dest-tag red">緩和ケア</span><span class="dest-tag red">伝統的利尿剤</span></div>
+            </div>
+          </div>
+          <div class="node warn-node leaf">
+            <div class="node-head"><span class="node-id">非②</span><span class="node-name">慎重投与・不耐容層</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#fff8ed" stroke="#e0a84a" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 37,20 Z" fill="#e0a84a"/>
+                  <path d="M20,20 L37,20 A17,17 0 0,1 29.5,35.8 Z" fill="#f5d08a" opacity="0.7"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a4a00" font-weight="500">15%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:#e0a84a;">約20万人</div>
+                  <div class="node-abs">非適応層の50%</div>
+                </div>
+              </div>
+              <div class="node-detail">低血圧リスク高い超高齢者・高K血症。掛け算でリスクが跳ね上がる層。</div>
+              <div class="dest-tags"><span class="dest-tag amber">ACEi/ARB継続</span><span class="dest-tag amber">SGLT2i単剤</span></div>
+            </div>
+          </div>
+          <div class="node leaf">
+            <div class="node-head"><span class="node-id">非③</span><span class="node-name">経済的・心理的障壁層</span></div>
+            <div class="node-body">
+              <div class="node-stats">
+                <svg class="node-pie" viewBox="0 0 40 40" width="40" height="40">
+                  <circle cx="20" cy="20" r="17" fill="#f4f1eb" stroke="#c8c3b5" stroke-width="1"/>
+                  <path d="M20,20 L20,3 A17,17 0 0,1 22.5,3.1 Z" fill="#95a5a6"/>
+                  <circle cx="20" cy="20" r="9" fill="#fff"/>
+                  <text x="20" y="23" text-anchor="middle" font-family="'DM Mono',monospace" font-size="6" fill="#7a7568" font-weight="500">5%</text>
+                </svg>
+                <div class="node-nums">
+                  <div class="node-pct" style="color:var(--muted);">約6万人</div>
+                  <div class="node-abs">非適応層の17%</div>
+                </div>
+              </div>
+              <div class="node-detail">現状維持バイアス・ジェネリック安定層。薬価比較・支援制度の説明が重要。</div>
+              <div class="dest-tags"><span class="dest-tag">既存薬（安定重視）</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /l1-grid -->
+
+  <!-- ══════════════════════════════
+       COMPARE STRIP
+  ══════════════════════════════ -->
+  <div class="compare-strip">
+    <div class="cs-head">同効薬比較 · HFrEF基準 · エンレスト vs 既存薬</div>
+    <div class="cs-grid">
+      <div class="cs-item">
+        <div class="cs-drug">エンレスト（ARNi）</div>
+        <div class="cs-pos">✓ 死亡率20%↓（PARADIGM-HF）<br>✓ 心保護・再入院減少</div>
+        <div class="cs-neg">△ ACEi前後36時間中止必須<br>△ 高薬価</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-drug">ACEi（エナラプリル等）</div>
+        <div class="cs-pos">✓ 長年の実績・安価<br>✓ 心保護エビデンス確立</div>
+        <div class="cs-neg">△ 空咳（約10〜15%）<br>△ エンレストと併用禁忌</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-drug">ARB（カンデサルタン等）</div>
+        <div class="cs-pos">✓ 忍容性良好・空咳なし<br>✓ 腎保護</div>
+        <div class="cs-neg">△ ARNiに対し効果劣る<br>△ エンレストと同時不可</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-drug">SGLT2i（ダパグリフロジン等）</div>
+        <div class="cs-pos">✓ HFpEFでも有効<br>✓ 腎保護・再入院阻止</div>
+        <div class="cs-neg">△ UTI・DKA（1型）リスク<br>△ 脱水に注意</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-drug">β遮断薬（カルベジロール等）</div>
+        <div class="cs-pos">✓ 心拍数管理・心保護<br>✓ 安価・実績あり</div>
+        <div class="cs-neg">△ 気管支喘息禁忌<br>△ 徐脈に注意</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tree-page -->
+
+<div class="statusbar">
+  <span style="color:#3a8c4a;">● PI 2025.09.09</span>
+  <span>DSU 2025.09.24</span>
+  <span>数値は推計値含む · ノード内円グラフはSVG静的描画</span>
+  <span class="draft">試作品 · 未検証版 · JS最小化済</span>
+</div>
+<div class="notif" id="notif"></div>
+
+<!-- ════════════════════════════════
+     JS: 最小限 — トグルのみ
+════════════════════════════════ -->
+<script>
+function tog(el){
+  el.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>
