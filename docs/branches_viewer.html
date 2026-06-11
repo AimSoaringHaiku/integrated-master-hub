@@ -1,0 +1,249 @@
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>対応分岐ビューア · KH 層E</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&amp;family=DM+Mono:wght@400;500&amp;family=Fraunces:ital,opsz,wght@0,9..144,700&amp;display=swap" rel="stylesheet">
+<style>
+/*
+  =====================================================
+  KH 対応分岐ビューア · 器（スクリプト）
+  データはJSONから外部fetch。HTMLを触らずにデータ差し替え可能。
+  URL例: branches_viewer.html?target=entresto_branches
+         branches_viewer.html?target=keytruda_branches
+  =====================================================
+*/
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#13120f;--paper:#f4f1eb;--cream:#edeae0;--muted:#7a7568;
+  --border:#ddd9cf;--border2:#c8c3b5;--hint:#b8b3a8;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans JP',sans-serif;--serif:'Fraunces',serif;
+  --red-bg:#fde8e8;--red-brd:#d4604a;--red-tx:#8c1c10;--red-fill:#c84030;
+  --amb-bg:#fff8ed;--amb-brd:#e0a84a;--amb-tx:#7a4a00;--amb-fill:#e0a84a;
+  --blu-bg:#e8f0fe;--blu-brd:#4a6fc8;--blu-tx:#1a3580;--blu-fill:#2a7acc;
+  --grn-bg:#f0faf2;--grn-brd:#8ecba0;--grn-tx:#1a5c2a;--grn-fill:#1a5c2a;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:13px;line-height:1.6;}
+
+.hdr{background:var(--ink);padding:0 24px;height:52px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;border-bottom:2px solid #222;}
+.hdr-id{font-family:var(--mono);font-size:9px;color:#444;letter-spacing:0.18em;}
+.hdr-drug{font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.02em;}
+.hdr-sub{font-size:10px;color:#555;font-weight:300;}
+.hdr-badge{font-family:var(--mono);font-size:8px;border:1px solid #4a6fc8;color:#4a6fc8;padding:2px 7px;border-radius:2px;margin-left:auto;}
+
+.wrap{max-width:780px;margin:0 auto;padding:24px 24px 48px;}
+.sec-title{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* CARD */
+.branch-card{background:#fff;margin-bottom:24px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.06);}
+.branch-card.c-amber{border:1px solid var(--amb-brd);border-top:3px solid var(--amb-fill);}
+.branch-card.c-red  {border:1px solid var(--red-brd);border-top:3px solid var(--red-fill);}
+.branch-card.c-blue {border:1px solid var(--blu-brd);border-top:3px solid var(--blu-fill);}
+.branch-card.c-green{border:1px solid var(--grn-brd);border-top:3px solid var(--grn-fill);}
+
+.branch-head{padding:10px 16px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.branch-num{font-family:var(--mono);font-size:8px;color:var(--hint);}
+.branch-drug{font-family:var(--serif);font-size:15px;font-weight:700;}
+.branch-arrow{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.branch-alt{font-size:13px;font-weight:500;flex:1;}
+.trigger{font-family:var(--mono);font-size:8px;padding:3px 9px;border-radius:2px;border:0.5px solid;flex-shrink:0;}
+.t-amber{background:var(--amb-bg);border-color:var(--amb-brd);color:var(--amb-tx);}
+.t-red  {background:var(--red-bg);border-color:var(--red-brd);color:var(--red-tx);}
+.t-blue {background:var(--blu-bg);border-color:var(--blu-brd);color:var(--blu-tx);}
+.t-green{background:var(--grn-bg);border-color:var(--grn-brd);color:var(--grn-tx);}
+.level-badge{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:2px;background:var(--cream);border:0.5px solid var(--border2);color:var(--muted);white-space:nowrap;}
+
+.brow{display:grid;grid-template-columns:120px 1fr;gap:0;border-bottom:0.5px solid var(--border);}
+.brow:last-child{border-bottom:none;}
+.brow-label{padding:10px 14px;background:var(--cream);border-right:1px solid var(--border);display:flex;align-items:flex-start;justify-content:flex-end;}
+.row-label-text{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-align:right;line-height:1.5;}
+.lbl-trigger{color:var(--red-tx);}
+.lbl-action {color:var(--blu-tx);}
+.lbl-logic  {color:var(--amb-tx);}
+.lbl-tips   {color:var(--grn-tx);}
+.brow-content{padding:10px 16px;font-size:11px;line-height:1.75;}
+
+.inline-box{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:9px;border:0.5px solid;margin:4px 3px 0 0;}
+.ib-red  {background:var(--red-bg);border-color:var(--red-brd);color:var(--red-tx);}
+.ib-green{background:var(--grn-bg);border-color:var(--grn-brd);color:var(--grn-tx);}
+.gl-ref{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:2px;background:var(--cream);border:0.5px solid var(--border2);font-family:var(--mono);font-size:8.5px;color:var(--muted);margin-top:5px;}
+.gl-ref-label{font-size:7px;color:var(--hint);letter-spacing:0.08em;}
+
+.script-strip{padding:10px 16px;border-top:1px solid var(--border);background:#fafaf8;display:grid;grid-template-columns:120px 1fr;gap:0;}
+.strip-label{font-family:var(--mono);font-size:7.5px;color:var(--muted);letter-spacing:0.1em;padding-top:2px;text-align:right;padding-right:14px;}
+.script-text{font-size:11px;line-height:1.75;}
+
+.meta-row{display:grid;grid-template-columns:120px 1fr;gap:0;border-top:0.5px solid var(--border);padding:7px 16px 7px 0;}
+.meta-label{font-family:var(--mono);font-size:7.5px;color:var(--muted);letter-spacing:0.1em;padding-right:14px;text-align:right;display:flex;align-items:center;justify-content:flex-end;}
+.meta-content{font-size:10.5px;line-height:1.65;}
+.meta-period{font-family:var(--mono);font-size:9px;color:var(--blu-tx);margin-right:8px;}
+.meta-wd{color:var(--red-tx);}
+.tag{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;border:0.5px solid;display:inline-block;margin:2px 3px 0 0;}
+
+.disclaimer{margin-top:24px;padding:12px 16px;background:var(--cream);border:0.5px solid var(--border2);border-radius:4px;font-size:10px;color:var(--muted);line-height:1.8;}
+.disclaimer strong{color:var(--ink);font-weight:500;}
+
+/* ローディング・エラー表示 */
+.loading{display:flex;align-items:center;gap:12px;padding:40px 24px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{padding:20px 24px;font-family:var(--mono);font-size:11px;color:var(--red-tx);background:var(--red-bg);border:0.5px solid var(--red-brd);border-radius:4px;margin:24px;}
+
+.statusbar{background:var(--ink);color:#444;padding:6px 24px;display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:8px;letter-spacing:0.08em;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-id">KH · 層E · 対応分岐</span>
+  <span class="hdr-drug" id="hdr-drug">読み込み中…</span>
+  <span class="hdr-sub" id="hdr-sub"></span>
+  <span class="hdr-badge">JSON分離アーキテクチャ</span>
+</div>
+
+<div class="wrap">
+  <div id="sec-title" class="sec-title"></div>
+  <div id="main-content">
+      <div class="error-box">
+        <strong>データ読み込みエラー</strong><br>Failed to fetch<br><br>
+        配置場所を確認してください：<code>data/entresto_branches.json</code><br>
+        または URLパラメータを確認：<code>?target=ファイル名（拡張子なし）</code>
+      </div></div>
+</div>
+
+<div class="statusbar">
+  <span id="status-target">target: entresto_branches</span>
+  <span>器（HTML）とデータ（JSON）を分離 · URLパラメータで切替可能</span>
+  <span style="margin-left:auto;font-style:italic;color:#333;">KH Branches Viewer v1</span>
+</div>
+
+<script>
+// ============================================
+// URLパラメータからターゲットJSONを決定
+// 例: ?target=entresto_branches
+//     ?target=keytruda_branches
+// ============================================
+const params = new URLSearchParams(window.location.search);
+const targetData = params.get('target') || 'entresto_branches';
+document.getElementById('status-target').textContent = `target: ${targetData}`;
+
+// ============================================
+// カラー設定マップ
+// ============================================
+const COLOR = {
+  amber: { cardClass:'c-amber', trigClass:'t-amber', lblTx:'var(--amb-tx)', tagBg:'var(--amb-bg)', tagBrd:'var(--amb-brd)', tagTx:'var(--amb-tx)' },
+  red:   { cardClass:'c-red',   trigClass:'t-red',   lblTx:'var(--red-tx)', tagBg:'var(--red-bg)', tagBrd:'var(--red-brd)', tagTx:'var(--red-tx)' },
+  blue:  { cardClass:'c-blue',  trigClass:'t-blue',  lblTx:'var(--blu-tx)', tagBg:'var(--blu-bg)', tagBrd:'var(--blu-brd)', tagTx:'var(--blu-tx)' },
+  green: { cardClass:'c-green', trigClass:'t-green', lblTx:'var(--grn-tx)', tagBg:'var(--grn-bg)', tagBrd:'var(--grn-brd)', tagTx:'var(--grn-tx)' },
+};
+
+// ============================================
+// 1枚のカードをHTMLとして生成
+// ============================================
+function renderCard(b, drugName) {
+  const col = COLOR[b.color] || COLOR.blue;
+  const tags = (b.trigger.tags || []).map(t =>
+    `<span class="tag" style="background:${col.tagBg};border-color:${col.tagBrd};color:${col.tagTx};">${t}</span>`
+  ).join('');
+  const steps = (b.action.steps || []).map((s, i) =>
+    `${i+1}. ${s}<br>`
+  ).join('');
+  const tipsHtml = (b.tips || '').replace(/\n/g, '<br>');
+
+  // 分岐04（green）は発想の転換ボックスをib-greenで表示
+  const noteBox = b.color === 'green'
+    ? `<span class="inline-box ib-green">${b.trigger.note}</span>`
+    : `<small style="font-size:9.5px;color:var(--muted);font-family:var(--mono);">${b.trigger.note}</small>`;
+
+  return `
+  <div class="branch-card ${col.cardClass}">
+    <div class="branch-head">
+      <span class="branch-num">分岐·${b.id}</span>
+      <span class="branch-drug">${drugName}</span>
+      <span class="branch-arrow">→</span>
+      <span class="branch-alt">${b.alt_drug}</span>
+      <span class="trigger ${col.trigClass}">${b.trigger_label}</span>
+      <span class="level-badge">${b.level}</span>
+    </div>
+    <div>
+      <!-- 判断基準 -->
+      <div class="brow">
+        <div class="brow-label"><span class="row-label-text lbl-trigger">判断基準<br>トリガー</span></div>
+        <div class="brow-content">
+          ${b.trigger.text}<br>
+          ${noteBox}<br>
+          ${tags}
+          <div><span class="gl-ref"><span class="gl-ref-label">GL参照</span>${b.gl_ref}</span></div>
+        </div>
+      </div>
+      <!-- 絶対行動 -->
+      <div class="brow">
+        <div class="brow-label"><span class="row-label-text lbl-action">絶対行動<br>アクション</span></div>
+        <div class="brow-content">
+          ${steps}
+          <span class="inline-box ib-red">${b.action.ci}</span>
+        </div>
+      </div>
+      <!-- 納得コンセプト -->
+      <div class="brow">
+        <div class="brow-label"><span class="row-label-text lbl-logic">納得コンセプト<br>ロジック</span></div>
+        <div class="brow-content">${b.logic}</div>
+      </div>
+      <!-- 収穫 -->
+      <div class="brow">
+        <div class="brow-label"><span class="row-label-text lbl-tips">収穫<br>Tips</span></div>
+        <div class="brow-content">${tipsHtml}</div>
+      </div>
+    </div>
+    <div class="script-strip">
+      <span class="strip-label">スクリプト</span>
+      <span class="script-text">${b.script}</span>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">モニタリング</div>
+      <div class="meta-content"><span class="meta-period">${b.monitoring.period}</span>${b.monitoring.items}</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">撤退ライン</div>
+      <div class="meta-content meta-wd">${b.withdraw}</div>
+    </div>
+  </div>`;
+}
+
+// ============================================
+// JSONをfetchして画面を構築
+// ============================================
+fetch(`./data/${targetData}.json`)
+  .then(res => {
+    if (!res.ok) throw new Error(`JSONが見つかりません: ./data/${targetData}.json (${res.status})`);
+    return res.json();
+  })
+  .then(data => {
+    // ヘッダーを更新
+    document.getElementById('hdr-drug').textContent = data.meta.drug;
+    document.getElementById('hdr-sub').textContent = data.meta.title;
+    document.getElementById('sec-title').textContent =
+      `${data.meta.drug} · ${data.meta.title}`;
+    document.title = `${data.meta.drug} 対応分岐 · KH 層E`;
+
+    // カードを全て生成
+    const cards = data.branches.map(b => renderCard(b, data.meta.drug)).join('');
+    const disclaimer = `
+      <div class="disclaimer">
+        <strong>本資料の位置づけ：</strong>${data.meta.disclaimer}
+      </div>`;
+
+    document.getElementById('main-content').innerHTML = cards + disclaimer;
+  })
+  .catch(err => {
+    document.getElementById('main-content').innerHTML = `
+      <div class="error-box">
+        <strong>データ読み込みエラー</strong><br>${err.message}<br><br>
+        配置場所を確認してください：<code>data/${targetData}.json</code><br>
+        または URLパラメータを確認：<code>?target=ファイル名（拡張子なし）</code>
+      </div>`;
+  });
+</script>
+
+
+</body></html>
