@@ -45,11 +45,14 @@
         <li><span class="icon">📁</span><a href="./docs/sub/index.html">sub フォルダ</a></li>
     </ul>
 
-    <footer>
-        © 2026 Integrated Master Hub. 
-        <!-- 例のツリービューワーへの隠しリンク -->
-        <a href="./tools/tree_viewer.html">⚙️</a>
-    </footer>
+<!-- docs/index.html の最下部（55行目付近）の書き換え案 -->
+<footer style="margin-top: 30px; text-align: center;">
+    <!-- API版への隠し導線（全ファイル棚卸し用） -->
+    <a href="./tools/tree_api.html" style="color: #f0f0f0; text-decoration: none; font-size: 10px; margin-right: 10px;">⚙️[A]</a>
+    
+    <!-- no-API版への隠し導線（公開リンク確認用） -->
+    <a href="./tools/tree_no_api.html" style="color: #f0f0f0; text-decoration: none; font-size: 10px;">⚙️[N]</a>
+</footer>
 </div>
 </body>
 </html>
