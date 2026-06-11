@@ -1,0 +1,399 @@
+<html><head></head><body><h2 class="sr-only">薬剤ナレッジ構築 進捗ダッシュボード</h2>
+
+<style>
+.dash{padding:1rem 0;}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;}
+.filters select,.filters input{font-size:13px;padding:5px 8px;}
+.filters label{font-size:12px;color:var(--color-text-secondary);}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem;}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.75rem 1rem;}
+.stat-n{font-size:22px;font-weight:500;line-height:1.1;}
+.stat-l{font-size:12px;color:var(--color-text-secondary);margin-top:2px;}
+.grid-head{display:grid;grid-template-columns:180px 90px 80px repeat(6,1fr) 100px;gap:0;font-size:11px;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border-tertiary);padding:0 0 6px;margin-bottom:4px;}
+.gh{padding:0 6px;}
+.row{display:grid;grid-template-columns:180px 90px 80px repeat(6,1fr) 100px;gap:0;border-radius:var(--border-radius-md);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);align-items:center;font-size:13px;}
+.row:hover{background:var(--color-background-secondary);}
+.rc{padding:0 6px;}
+.drug-name{font-weight:500;font-size:13px;}
+.drug-sub{font-size:11px;color:var(--color-text-secondary);}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--border-radius-md);font-weight:500;}
+.b-done{background:var(--color-background-success);color:var(--color-text-success);}
+.b-wip {background:var(--color-background-info);color:var(--color-text-info);}
+.b-next{background:var(--color-background-warning);color:var(--color-text-warning);}
+.b-open{background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.check{font-size:16px;text-align:center;}
+.ck-done{color:var(--color-text-success);}
+.ck-wip {color:var(--color-text-info);}
+.ck-no  {color:var(--color-border-secondary);}
+.priority{font-size:11px;text-align:center;}
+.p1{color:var(--color-text-danger);font-weight:500;}
+.p2{color:var(--color-text-warning);font-weight:500;}
+.p3{color:var(--color-text-secondary);}
+.area-tag{font-size:11px;padding:1px 6px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.suggest-btn{font-size:11px;padding:3px 8px;cursor:pointer;background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);color:var(--color-text-secondary);}
+.suggest-btn:hover{background:var(--color-background-secondary);}
+</style>
+
+<div class="dash">
+
+<div class="filters">
+  <label>領域</label>
+  <select id="f-area" onchange="applyFilter()">
+    <option value="">すべて</option>
+    <option value="心不全">心不全</option>
+    <option value="腫瘍">腫瘍</option>
+    <option value="皮膚">皮膚</option>
+    <option value="呼吸器">呼吸器</option>
+    <option value="片頭痛">片頭痛</option>
+    <option value="代謝">代謝</option>
+    <option value="神経">神経</option>
+    <option value="その他">その他</option>
+  </select>
+  <label>ステータス</label>
+  <select id="f-status" onchange="applyFilter()">
+    <option value="">すべて</option>
+    <option value="完了">完了</option>
+    <option value="着手中">着手中</option>
+    <option value="次候補">次候補</option>
+    <option value="未着手">未着手</option>
+  </select>
+  <label>RMP</label>
+  <select id="f-rmp" onchange="applyFilter()">
+    <option value="">すべて</option>
+    <option value="1">あり</option>
+    <option value="0">なし</option>
+  </select>
+  <input type="text" id="f-text" placeholder="薬剤名で絞込…" oninput="applyFilter()" style="width:140px;">
+  <button class="suggest-btn" onclick="sendPrompt('次に着手すべき薬剤を優先度と理由付きで3つ提案してください')">次の着手候補を提案 ↗</button>
+</div>
+
+<div class="summary">
+  <div class="stat"><div class="stat-n" id="s-total">19</div><div class="stat-l">薬剤総数</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--color-text-success)" id="s-done">0</div><div class="stat-l">完了</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--color-text-info)" id="s-wip">2</div><div class="stat-l">着手中</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--color-text-warning)" id="s-next">5</div><div class="stat-l">次候補</div></div>
+</div>
+
+<div class="grid-head">
+  <div class="gh">薬剤名</div>
+  <div class="gh">領域</div>
+  <div class="gh">ステータス</div>
+  <div class="gh" style="text-align:center">アトラス</div>
+  <div class="gh" style="text-align:center">分岐</div>
+  <div class="gh" style="text-align:center">コックピット</div>
+  <div class="gh" style="text-align:center">JSON</div>
+  <div class="gh" style="text-align:center">RMP</div>
+  <div class="gh" style="text-align:center">GL</div>
+  <div class="gh" style="text-align:center">優先度</div>
+</div>
+
+<div id="drug-list">
+    <div class="row" title="心不全GL 第6章・10章 対応分岐v2完成">
+      <div class="rc"><div class="drug-name">エンレスト</div><div class="drug-sub">サクビトリルバルサルタン</div></div>
+      <div class="rc"><span class="area-tag">心不全</span></div>
+      <div class="rc"><span class="badge b-wip">着手中</span></div>
+      <div class="check ck-done" title="アトラス"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="対応分岐"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="コックピット"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="JSON分離"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p1">P1</div>
+    </div>
+    <div class="row" title="エンレストと接続・心不全領域マスタDB完成に直結">
+      <div class="rc"><div class="drug-name">コラン</div><div class="drug-sub">イバブラジン</div></div>
+      <div class="rc"><span class="area-tag">心不全</span></div>
+      <div class="rc"><span class="badge b-next">次候補</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p1">P1</div>
+    </div>
+    <div class="row" title="エンレスト分岐02に記載済み。独立展開候補">
+      <div class="rc"><div class="drug-name">ベリキューボ</div><div class="drug-sub">ベルイシグアト</div></div>
+      <div class="rc"><span class="area-tag">心不全</span></div>
+      <div class="rc"><span class="badge b-next">次候補</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="対応分岐"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p1">P1</div>
+    </div>
+    <div class="row" title="エンレスト分岐03に記載済み">
+      <div class="rc"><div class="drug-name">ダパグリフロジン</div><div class="drug-sub">フォシーガ</div></div>
+      <div class="rc"><span class="area-tag">心不全</span></div>
+      <div class="rc"><span class="badge b-next">次候補</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="対応分岐"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p1">P1</div>
+    </div>
+    <div class="row" title="絶対王者。喘息・鼻茸・アトピー全対応">
+      <div class="rc"><div class="drug-name">デュピクセント</div><div class="drug-sub">デュピルマブ</div></div>
+      <div class="rc"><span class="area-tag">皮膚</span></div>
+      <div class="rc"><span class="badge b-next">次候補</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="TSV作成済。対応分岐の実装候補">
+      <div class="rc"><div class="drug-name">キイトルーダ</div><div class="drug-sub">ペムブロリズマブ</div></div>
+      <div class="rc"><span class="area-tag">腫瘍</span></div>
+      <div class="rc"><span class="badge b-wip">着手中</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="適応症多数。整理の4ステップ適用候補">
+      <div class="rc"><div class="drug-name">オプジーボ</div><div class="drug-sub">ニボルマブ</div></div>
+      <div class="rc"><span class="area-tag">腫瘍</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="TSLP司令塔狙い。難治性喘息">
+      <div class="rc"><div class="drug-name">テクフィデラ</div><div class="drug-sub">テゼペルマブ</div></div>
+      <div class="rc"><span class="area-tag">呼吸器</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="自己注射。シェア高い">
+      <div class="rc"><div class="drug-name">エムガルティ</div><div class="drug-sub">ガルカネズマブ</div></div>
+      <div class="rc"><span class="area-tag">片頭痛</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="肥満症。社会的注目度最高">
+      <div class="rc"><div class="drug-name">ウゴービ</div><div class="drug-sub">セマグルチド</div></div>
+      <div class="rc"><span class="area-tag">代謝</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="肥満症。GIP/GLP-1デュアル">
+      <div class="rc"><div class="drug-name">マンジャロ</div><div class="drug-sub">チルゼパチド</div></div>
+      <div class="rc"><span class="area-tag">代謝</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="アルツハイマー。高い社会的関心">
+      <div class="rc"><div class="drug-name">レケンビ</div><div class="drug-sub">レカネマブ</div></div>
+      <div class="rc"><span class="area-tag">神経</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="アルツハイマー第2世代">
+      <div class="rc"><div class="drug-name">ドナネマブ</div><div class="drug-sub">キシントラ</div></div>
+      <div class="rc"><span class="area-tag">神経</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="IL-5。鼻茸・喘息">
+      <div class="rc"><div class="drug-name">ヌーカラ</div><div class="drug-sub">メポリズマブ</div></div>
+      <div class="rc"><span class="area-tag">呼吸器</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="JAK阻害薬。内服で強力">
+      <div class="rc"><div class="drug-name">リンヴォック</div><div class="drug-sub">ウパダシチニブ</div></div>
+      <div class="rc"><span class="area-tag">皮膚</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="痒み特化。速度最速">
+      <div class="rc"><div class="drug-name">ミチーガ</div><div class="drug-sub">ネモリズマブ</div></div>
+      <div class="rc"><span class="area-tag">皮膚</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="RMP資材ある唯一の麻薬。心理的ハードル高い">
+      <div class="rc"><div class="drug-name">オキシコンチンTR</div><div class="drug-sub">オキシコドン</div></div>
+      <div class="rc"><span class="area-tag">その他</span></div>
+      <div class="rc"><span class="badge b-next">次候補</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="RMP資材"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="GL"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="priority p2">P2</div>
+    </div>
+    <div class="row" title="3ヶ月製剤あり">
+      <div class="rc"><div class="drug-name">アジョビ</div><div class="drug-sub">フレマネズマブ</div></div>
+      <div class="rc"><span class="area-tag">片頭痛</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div>
+    <div class="row" title="CGRP受容体ブロック唯一">
+      <div class="rc"><div class="drug-name">アイモビーグ</div><div class="drug-sub">エレヌマブ</div></div>
+      <div class="rc"><span class="area-tag">片頭痛</span></div>
+      <div class="rc"><span class="badge b-open">未着手</span></div>
+      <div class="check ck-no" title="アトラス"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="対応分岐"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="コックピット"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="JSON分離"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-no" title="RMP資材"><i class="ti ti-circle" aria-hidden="true"></i></div>
+      <div class="check ck-done" title="GL"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="priority p3">P3</div>
+    </div></div>
+</div>
+
+<script>
+const DRUGS = [
+  {name:"エンレスト",sub:"サクビトリルバルサルタン",area:"心不全",status:"着手中",atlas:1,branch:1,cockpit:1,json:1,rmp:0,gl:1,priority:1,glDate:"2025年",note:"心不全GL 第6章・10章 対応分岐v2完成"},
+  {name:"コラン",sub:"イバブラジン",area:"心不全",status:"次候補",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:1,glDate:"2025年",note:"エンレストと接続・心不全領域マスタDB完成に直結"},
+  {name:"ベリキューボ",sub:"ベルイシグアト",area:"心不全",status:"次候補",atlas:0,branch:1,cockpit:0,json:0,rmp:0,gl:1,priority:1,glDate:"2025年",note:"エンレスト分岐02に記載済み。独立展開候補"},
+  {name:"ダパグリフロジン",sub:"フォシーガ",area:"心不全",status:"次候補",atlas:0,branch:1,cockpit:0,json:0,rmp:0,gl:1,priority:1,glDate:"2025年",note:"エンレスト分岐03に記載済み"},
+  {name:"デュピクセント",sub:"デュピルマブ",area:"皮膚",status:"次候補",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:1,priority:2,glDate:"2025年12月",note:"絶対王者。喘息・鼻茸・アトピー全対応"},
+  {name:"キイトルーダ",sub:"ペムブロリズマブ",area:"腫瘍",status:"着手中",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:1,priority:2,glDate:"2026年2月",note:"TSV作成済。対応分岐の実装候補"},
+  {name:"オプジーボ",sub:"ニボルマブ",area:"腫瘍",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:1,priority:2,glDate:"2025年11月",note:"適応症多数。整理の4ステップ適用候補"},
+  {name:"テクフィデラ",sub:"テゼペルマブ",area:"呼吸器",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:1,priority:2,glDate:"2026年2月",note:"TSLP司令塔狙い。難治性喘息"},
+  {name:"エムガルティ",sub:"ガルカネズマブ",area:"片頭痛",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2022年11月",note:"自己注射。シェア高い"},
+  {name:"ウゴービ",sub:"セマグルチド",area:"代謝",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:2,glDate:"2025年5月",note:"肥満症。社会的注目度最高"},
+  {name:"マンジャロ",sub:"チルゼパチド",area:"代謝",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:2,glDate:"2025年3月",note:"肥満症。GIP/GLP-1デュアル"},
+  {name:"レケンビ",sub:"レカネマブ",area:"神経",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2023年12月",note:"アルツハイマー。高い社会的関心"},
+  {name:"ドナネマブ",sub:"キシントラ",area:"神経",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2025年8月",note:"アルツハイマー第2世代"},
+  {name:"ヌーカラ",sub:"メポリズマブ",area:"呼吸器",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:1,priority:3,glDate:"2026年2月",note:"IL-5。鼻茸・喘息"},
+  {name:"リンヴォック",sub:"ウパダシチニブ",area:"皮膚",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2024年9月",note:"JAK阻害薬。内服で強力"},
+  {name:"ミチーガ",sub:"ネモリズマブ",area:"皮膚",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2024年5月",note:"痒み特化。速度最速"},
+  {name:"オキシコンチンTR",sub:"オキシコドン",area:"その他",status:"次候補",atlas:0,branch:0,cockpit:0,json:0,rmp:1,gl:0,priority:2,glDate:"—",note:"RMP資材ある唯一の麻薬。心理的ハードル高い"},
+  {name:"アジョビ",sub:"フレマネズマブ",area:"片頭痛",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2022年11月",note:"3ヶ月製剤あり"},
+  {name:"アイモビーグ",sub:"エレヌマブ",area:"片頭痛",status:"未着手",atlas:0,branch:0,cockpit:0,json:0,rmp:0,gl:1,priority:3,glDate:"2022年11月",note:"CGRP受容体ブロック唯一"},
+];
+
+const ST={
+  "完了":"b-done","着手中":"b-wip","次候補":"b-next","未着手":"b-open"
+};
+const CK={1:"ck-done",0:"ck-no"};
+
+function ck(v,label){
+  const cls=v?"ck-done":"ck-no";
+  const icon=v?"ti-circle-check":"ti-circle";
+  return `<div class="check ${cls}" title="${label}"><i class="ti ${icon}" aria-hidden="true"></i></div>`;
+}
+
+function pLabel(p){
+  if(p===1) return `<div class="priority p1">P1</div>`;
+  if(p===2) return `<div class="priority p2">P2</div>`;
+  return `<div class="priority p3">P3</div>`;
+}
+
+function renderRows(data){
+  const el=document.getElementById('drug-list');
+  el.innerHTML=data.map(d=>`
+    <div class="row" title="${d.note||''}">
+      <div class="rc"><div class="drug-name">${d.name}</div><div class="drug-sub">${d.sub}</div></div>
+      <div class="rc"><span class="area-tag">${d.area}</span></div>
+      <div class="rc"><span class="badge ${ST[d.status]}">${d.status}</span></div>
+      ${ck(d.atlas,"アトラス")}
+      ${ck(d.branch,"対応分岐")}
+      ${ck(d.cockpit,"コックピット")}
+      ${ck(d.json,"JSON分離")}
+      ${ck(d.rmp,"RMP資材")}
+      ${ck(d.gl,"GL")}
+      ${pLabel(d.priority)}
+    </div>`).join('');
+  document.getElementById('s-total').textContent=data.length;
+  document.getElementById('s-done').textContent=data.filter(d=>d.status==="完了").length;
+  document.getElementById('s-wip').textContent=data.filter(d=>d.status==="着手中").length;
+  document.getElementById('s-next').textContent=data.filter(d=>d.status==="次候補").length;
+}
+
+function applyFilter(){
+  const area=document.getElementById('f-area').value;
+  const status=document.getElementById('f-status').value;
+  const rmp=document.getElementById('f-rmp').value;
+  const text=document.getElementById('f-text').value.toLowerCase();
+  const filtered=DRUGS.filter(d=>{
+    if(area && d.area!==area) return false;
+    if(status && d.status!==status) return false;
+    if(rmp!=='' && d.rmp!==parseInt(rmp)) return false;
+    if(text && !d.name.toLowerCase().includes(text) && !d.sub.toLowerCase().includes(text)) return false;
+    return true;
+  });
+  renderRows(filtered);
+}
+
+renderRows(DRUGS);
+</script>
+</body></html>
