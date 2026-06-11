@@ -6,8 +6,8 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        button { background: #3498db; color: white; border: none; padding: 14px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 20px; transition: 0.2s; }
-        button:hover { background: #2980b9; }
+        button { background: #2ecc71; color: white; border: none; padding: 14px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 20px; transition: 0.2s; }
+        button:hover { background: #27ae60; }
         pre { background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 4px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
         .status { font-size: 13px; color: #27ae60; text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: bold; }
     </style>
@@ -15,31 +15,51 @@
 <body>
 <div class="container">
     <h2>📂 リポジトリ・ツリー自動同期ツール</h2>
-    <p style="font-size:13px; color:#666; margin-bottom:20px;">ボタンを押すと、GitHubから最新のフォルダ構造をリアルタイムに取得して図示します。</p>
+    <p style="font-size:13px; color:#666; margin-bottom:20px;">トップページのリンク集を解析して、現在のディレクトリ構造を自動で図示します。</p>
     
-    <button onclick="fetchGitHubTree()">⚡ リアルタイムでディレクトリを同期・図示する</button>
+    <button onclick="syncTreeFromHub()">⚡ ディレクトリを自動同期・図示する</button>
     <div id="statusMessage" class="status"></div>
     <pre id="outputTree">ここにツリー図が自動生成されます</pre>
 </div>
 
 <script>
-async function fetchGitHubTree() {
+async function syncTreeFromHub() {
     const status = document.getElementById('statusMessage');
     const output = document.getElementById('outputTree');
-    status.textContent = "⏳ GitHubから最新のディレクトリを取得中...";
-    
-    // あなたのリポジトリの全てのファイルツリーを再帰的に取得するAPI
-    const url = "https://github.com";
+    status.textContent = "⏳ トップページから最新情報を読み込み中...";
     
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('データの取得に失敗しました');
-        const data = await response.json();
+        // 隣にある index.html を直接読み込んで中身を解析する
+        const response = await fetch('../index.html');
+        if (!response.ok) throw new Error('インデックスファイルの読み込みに失敗しました');
+        const htmlText = await response.json || await response.text();
+        
+        // HTMLからリンク（href）を抽出
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a')).map(a => a.getAttribute('href'));
+        
+        let filePaths = [
+            'index.html',
+            'tools/tree_viewer.html',
+            'README.md'
+        ];
+        
+        // 抽出したリンクをパスのリストに追加
+        links.forEach(href => {
+            if(href && href.startsWith('./')) {
+                filePaths.push(href.replace('./', ''));
+            } else if (href && !href.startsWith('http') && !href.startsWith('#')) {
+                filePaths.push(href);
+            }
+        });
+        
+        // 重複を除去
+        filePaths = [...new Set(filePaths)];
         
         let tree = {};
-        // 取得したファイルパスを解析してオブジェクトに変換
-        data.tree.forEach(item => {
-            let parts = item.path.split('/');
+        filePaths.forEach(path => {
+            let parts = path.split('/');
             let current = tree;
             parts.forEach(part => {
                 if (!current[part]) current[part] = {};
@@ -47,11 +67,12 @@ async function fetchGitHubTree() {
             });
         });
 
-        // テキスト図にレンダリング
+        // テキストツリーに変換
         function render(obj, prefix = '') {
             let result = '';
             const keys = Object.keys(obj);
             keys.forEach((key, index) => {
+                if(!key) return;
                 const isLast = index === keys.length - 1;
                 const isFolder = Object.keys(obj[key]).length > 0;
                 const icon = isFolder ? '📂 ' : '📄 ';
@@ -64,10 +85,10 @@ async function fetchGitHubTree() {
             return result;
         }
 
-        output.textContent = 'integrated-master-hub/\n' + render(tree);
-        status.textContent = "✅ 同期が完了しました！";
+        output.textContent = 'docs/\n' + render(tree);
+        status.textContent = "✅ トップページとの同期が完了しました！";
     } catch (error) {
-        output.textContent = "エラー: " + error.message + "\nリポジトリが公開（Public）になっているか確認してください。";
+        output.textContent = "エラー: " + error.message;
         status.textContent = "";
     }
 }
