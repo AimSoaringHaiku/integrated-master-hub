@@ -213,7 +213,7 @@ function renderCard(b, drugName) {
 // ============================================
 // JSONをfetchして画面を構築
 // ============================================
-fetch(`./data/${targetData}.json`)
+fetch(`../data/${targetData}.json`)
   .then(res => {
     if (!res.ok) throw new Error(`JSONが見つかりません: ./data/${targetData}.json (${res.status})`);
     return res.json();
