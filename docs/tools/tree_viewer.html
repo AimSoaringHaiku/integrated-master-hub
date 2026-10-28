@@ -30,9 +30,9 @@ async function syncTreeFromHub() {
     
     try {
         // 隣にある index.html を直接読み込んで中身を解析する
-        const response = await fetch('../index.html');
+        const response = await fetch('../apps/index.html');
         if (!response.ok) throw new Error('インデックスファイルの読み込みに失敗しました');
-        const htmlText = await response.json || await response.text();
+        const htmlText = await response.text();
         
         // HTMLからリンク（href）を抽出
         const parser = new DOMParser();

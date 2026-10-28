@@ -13,5 +13,6 @@ docs/
   maps/     ← SVGフロー図
   tools/    ← ツール類
   sub/      ← サブシステム
-  src/      ← 元資料（TSV・MD・TXT）
+  templates/ ← JSON分離型ビューア（?target=で切替）
+notes/      ← 元資料（TSV・MD・TXT）。docs/ の外、リポジトリ直下
 ```
