@@ -272,6 +272,7 @@ header{
 .notice ul{margin:0;padding-left:18px}
 .notice li{margin:1px 0}
 .un{display:inline-block;font-family:var(--mono);font-size:9px;line-height:1.4;color:#8c1c10;background:#fde8e8;border:1px solid #d4604a;border-radius:2px;padding:0 4px;margin-left:5px;vertical-align:middle;white-space:nowrap;font-weight:500}
+.un-ok{color:#1a5c2a;background:#e6f4ea;border-color:#6aa97b}
 .un-b{color:#7a4a00;background:#fff4d6;border-color:#c8902a}
 </style>
 </head>
@@ -289,10 +290,12 @@ header{
   <b class="t">試作。薬剤師の確認前の内容を含む</b>
   本ページは試作です。臨床判断・服薬指導の根拠として、そのまま使わないでください。内容の確認は、添付文書など一次資料で行ってください。
   <h2>数値の出典（資料名・版）</h2>
+  <p style="margin:0 0 4px;">ページ番号と原文は、元の回答を作ったAI（Gemini）に再確認させた結果です。<b>当方・薬剤師は原文を照合していません</b>（「未照合」）。</p>
   <ul>
-    <li>資料名・版として確認できているもの：エンレスト錠 添付文書（2025年9月9日付、PMDA掲載）、DSU（2025年9月24日付）。ページ下部の表記と対応します。ただし、本ページの個々の数値がこれらのどこに載っているかは、確認していません。</li>
-    <li>36時間（ACE阻害薬との間隔）：企業資材（エンレスト適正使用ガイド）の記載に基づく内容です。ページ番号と原文での確認は未実施です。<span class="un un-b">企業資材ベース・ページ未確認</span></li>
-    <li>上記以外の数値（人口、患者数、割合、人数、前年比、試験結果、頻度、検査値の基準など）：<b>出典未確認</b>です。推計を含みます。各数値の近くに<span class="un">出典未確認</span>と表示しています。</li>
+    <li>資料名・版として確認できているもの（日付）：エンレスト錠 添付文書（2025年9月9日付、PMDA掲載）、DSU（2025年9月24日付）。ページ下部の表記と対応します。ただし、本ページの個々の数値がこれらのどこに載っているかは、確認していません。</li>
+    <li>36時間（ACE阻害薬との間隔）：エンレスト錠 適正使用ガイド（高血圧症、2021年9月作成／2025年9月改訂）p.10「少なくとも本剤投与開始36時間前に中止すること」。<span class="un un-ok">高血圧症ガイド p.10（未照合）</span></li>
+    <li>PARADIGM-HF：エンレスト錠 適正使用ガイド（慢性心不全、版は不明）p.30「複合エンドポイントの発現リスクが20%減少」。以前の「死亡率20%↓」の表記は不正確だったため訂正しました。<span class="un un-ok">心不全ガイド p.30（未照合）</span></li>
+    <li>上記以外の数値：<b>出典未確認</b>です。推計を含みます。このうち、患者数、各層の割合、前年比、空咳の頻度は、企業資材4点（はじめてガイド成人用・小児用、適正使用ガイド高血圧症・慢性心不全）に記載がないことを、Geminiへの確認で得ています。人口、eGFR<15などその他の数値は、確認していません。各数値の近くに<span class="un">出典未確認</span>と表示しています。</li>
   </ul>
 </div>
 
@@ -373,7 +376,7 @@ header{
             <div class="node-abs">心不全全体の30.8%<span class="un">出典未確認</span></div>
           </div>
         </div>
-        <div class="node-detail">LVEF≦40%。エンレストの主戦場。死亡率20%↓（PARADIGM-HF）。<span class="un">出典未確認</span></div>
+        <div class="node-detail">LVEF≦40%。エンレストの主戦場。複合エンドポイントの発現リスク20%減少（PARADIGM-HF）。<span class="un un-ok">心不全ガイド p.30（未照合）</span></div>
       </div>
       <!-- L2 children -->
       <div class="children">
@@ -444,8 +447,8 @@ header{
                   <div class="node-abs">HFrEFの30%<span class="un">出典未確認</span></div>
                 </div>
               </div>
-              <div class="node-detail">切替候補層。<strong>36時間ウォッシュアウト</strong>の説明が移行の鍵。<span class="un un-b">企業資材ベース・ページ未確認</span></div>
-              <div class="dest-tags"><span class="dest-tag amber">切替時 36h確認必須</span><span class="un un-b">企業資材ベース・ページ未確認</span></div>
+              <div class="node-detail">切替候補層。<strong>36時間ウォッシュアウト</strong>の説明が移行の鍵。<span class="un un-ok">高血圧症ガイド p.10（未照合）</span></div>
+              <div class="dest-tags"><span class="dest-tag amber">切替時 36h確認必須</span><span class="un un-ok">高血圧症ガイド p.10（未照合）</span></div>
             </div>
           </div>
 
@@ -618,7 +621,7 @@ header{
                   <div class="node-abs">高血圧の60%<span class="un">出典未確認</span></div>
                 </div>
               </div>
-              <div class="node-detail">高血圧の標準治療。エンレストへの切替対象にならない。<br>エンレストと<strong>併用禁忌</strong>（36時間ルール）。<span class="un un-b">企業資材ベース・ページ未確認</span></div>
+              <div class="node-detail">高血圧の標準治療。エンレストへの切替対象にならない。<br>エンレストと<strong>併用禁忌</strong>（36時間ルール）。<span class="un un-ok">高血圧症ガイド p.10（未照合）</span></div>
               <div class="dest-tags"><span class="dest-tag red">エンレストと併用禁忌</span></div>
             </div>
           </div>
@@ -849,8 +852,8 @@ header{
     <div class="cs-grid">
       <div class="cs-item">
         <div class="cs-drug">エンレスト（ARNi）</div>
-        <div class="cs-pos">✓ 死亡率20%↓（PARADIGM-HF）<span class="un">出典未確認</span><br>✓ 心保護・再入院減少</div>
-        <div class="cs-neg">△ ACEi前後36時間中止必須<span class="un un-b">企業資材ベース・ページ未確認</span><br>△ 高薬価</div>
+        <div class="cs-pos">✓ 複合エンドポイントの発現リスク20%減少（PARADIGM-HF）<span class="un un-ok">心不全ガイド p.30（未照合）</span><br>✓ 心保護・再入院減少</div>
+        <div class="cs-neg">△ ACEiは投与開始の36時間前に中止必須<span class="un un-ok">高血圧症ガイド p.10（未照合）</span><br>△ 高薬価</div>
       </div>
       <div class="cs-item">
         <div class="cs-drug">ACEi（エナラプリル等）</div>
