@@ -274,6 +274,18 @@ header{
 .un{display:inline-block;font-family:var(--mono);font-size:9px;line-height:1.4;color:#8c1c10;background:#fde8e8;border:1px solid #d4604a;border-radius:2px;padding:0 4px;margin-left:5px;vertical-align:middle;white-space:nowrap;font-weight:500}
 .un-ok{color:#1a5c2a;background:#e6f4ea;border-color:#6aa97b}
 .un-b{color:#7a4a00;background:#fff4d6;border-color:#c8902a}
+/* ── 印刷：折りたたみを全部開いて出力 ── */
+@page{size:A4 portrait;margin:10mm}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .children{display:block !important}
+  .drill-arrow{display:none}
+  .legend span:last-child{display:none}
+  .node{break-inside:avoid}
+  .notice{break-inside:avoid}
+  header{border-bottom:1px solid #999}
+  .tree-page{padding:8px 0}
+}
 </style>
 </head>
 <body>
